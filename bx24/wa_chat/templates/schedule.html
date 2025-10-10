@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>График платежей — сделка {{ deal_id or "" }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root { --maxw: 980px; }
+        body {
+            margin: 0; padding: 24px;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            line-height: 1.5; background: #f6f8fa; color: #111827;
+        }
+        .wrap {
+            max-width: var(--maxw); margin: 0 auto; background: #fff;
+            border: 1px solid #e5e7eb; border-radius: 10px; padding: 24px;
+            box-shadow: 0 1px 2px rgba(0,0,0,.03);
+        }
+        .docx {
+            word-wrap: break-word;
+        }
+        .docx h1, .docx h2, .docx h3 { margin-top: 1.2em; }
+        .docx table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+        .docx th, .docx td { border: 1px solid #e5e7eb; padding: 8px; vertical-align: top; }
+        .docx img { max-width: 100%; height: auto; }
+        .muted { color: #6b7280; font-size: 12px; }
+        .error { color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; padding: 12px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% else %}
+            <div class="docx">
+                {{ schedule_html | safe }}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

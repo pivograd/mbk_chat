@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>История чата {{ phone }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f7f9fb;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-container {
+            background: #fff;
+            box-shadow: 0 4px 24px rgba(30, 50, 100, 0.06), 0 1.5px 6px rgba(30, 50, 100, 0.03);
+            border-radius: 16px;
+            padding: 32px 16px 24px 16px;
+            max-width: 430px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .msg-row {
+            display: flex;
+        }
+        .msg {
+            padding: 10px 16px;
+            border-radius: 14px;
+            font-size: 16px;
+            line-height: 1.6;
+            max-width: 80%;
+            word-break: break-word;
+            box-shadow: 0 1px 2px rgba(30, 50, 100, 0.03);
+            position: relative;
+            transition: background 0.2s;
+        }
+        .incoming {
+            background: #f0f2f5;
+            color: #20232a;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+        .outgoing {
+            background: #e0f7ee;
+            color: #17614b;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        .dt {
+            font-size: 11px;
+            color: #99a;
+            margin-top: 4px;
+            text-align: right;
+            opacity: 0.8;
+        }
+        .empty-message, .error-message {
+            padding: 36px 0;
+            text-align: center;
+            color: #99a;
+            font-size: 18px;
+            font-style: italic;
+            opacity: 0.9;
+        }
+        .error-message {
+            color: #d32f2f;
+            font-weight: bold;
+            font-size: 19px;
+        }
+        /* Немного для вложений */
+        .msg img {
+            margin-top: 4px;
+            background: #fafafa;
+        }
+        .msg a {
+            color: #17614b;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <form method="post" style="margin-bottom:18px;display:flex;gap:10px;align-items:center;">
+            <label for="agent">Агент:</label>
+            <select id="agent" name="agent" onchange="this.form.submit()">
+                {% for ag in agents %}
+                    <option value="{{ ag }}" {% if ag == selected_agent %}selected{% endif %}>{{ ag|capitalize }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="PLACEMENT_OPTIONS" value="{{ placement_options }}">
+            <input type="hidden" name="AUTH_ID" value="{{ auth_id }}">
+        </form>
+
+
+        {% if dialog_error %}
+            <div class="error-message">Не удалось получить диалог</div>
+        {% elif not messages or messages|length == 0 %}
+            <div class="empty-message">Клиент не общался с агентом.</div>
+        {% else %}
+            {% for msg in messages %}
+                {% if msg.typeMessage == "textMessage" %}
+                    <div class="msg-row" style="justify-content: {{ 'flex-end' if msg.type == 'outgoing' else 'flex-start' }};">
+                        <div class="msg {{ msg.type }}">
+                            {{ msg.textMessage }}
+                            <div class="dt">{{ msg.dt }}</div>
+                        </div>
+                    </div>
+                {% elif msg.typeMessage == "extendedTextMessage" %}
+                    <div class="msg-row" style="justify-content: {{ 'flex-end' if msg.type == 'outgoing' else 'flex-start' }};">
+                        <div class="msg {{ msg.type }}">
+                            {{ msg.extendedTextMessage.text }}
+                            <div class="dt">{{ msg.dt }}</div>
+                        </div>
+                    </div>
+                {% elif msg.typeMessage == "imageMessage" %}
+                    <div class="msg-row" style="justify-content: {{ 'flex-end' if msg.type == 'outgoing' else 'flex-start' }};">
+                        <div class="msg {{ msg.type }}">
+                            {% if msg.downloadUrl %}
+                                <a href="{{ msg.downloadUrl }}" target="_blank" style="display:inline-block;">
+                                    <img src="{{ msg.downloadUrl }}" alt="Изображение" style="max-width:200px;max-height:200px;border-radius:8px;box-shadow:0 1px 8px #0001;">
+                                </a>
+                            {% else %}
+                                <i>[Изображение недоступно]</i>
+                            {% endif %}
+                            {% if msg.caption %}
+                                <div style="margin-top:6px; color:#555;">{{ msg.caption }}</div>
+                            {% endif %}
+                            <div class="dt">{{ msg.dt }}</div>
+                        </div>
+                    </div>
+                {% elif msg.typeMessage == "documentMessage" %}
+                    <div class="msg-row" style="justify-content: {{ 'flex-end' if msg.type == 'outgoing' else 'flex-start' }};">
+                        <div class="msg {{ msg.type }}">
+                            {% if msg.downloadUrl %}
+                                <a href="{{ msg.downloadUrl }}" target="_blank" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+                                    <svg width="20" height="20" fill="#666" style="flex-shrink:0;" viewBox="0 0 24 24"><path d="M19 2H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6l-5-4zm-1 16H8V4h7v5h5v9c0 1.1-.9 2-2 2zm-7-8h2v6h-2zm0-4h2v2h-2z"/></svg>
+                                    <span style="color:#17614b; font-weight:500;">{{ msg.fileName or "Документ" }}</span>
+                                </a>
+                            {% else %}
+                                <i>[Документ недоступен]</i>
+                            {% endif %}
+                            {% if msg.caption %}
+                                <div style="margin-top:6px; color:#555;">{{ msg.caption }}</div>
+                            {% endif %}
+                            <div class="dt">{{ msg.dt }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>

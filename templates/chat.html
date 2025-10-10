@@ -1,0 +1,254 @@
+{% set msgs = messages or [] %}
+{% set has_msgs = (msgs|length) > 0 %}
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Диалог</title>
+  <style>
+    :root{
+      --bg:#f6f7f9; --panel:#fff; --text:#111827; --line:#e5e7eb;
+      --user:#e8f0ff;       /* клиент (user), слева, голубоватый */
+      --assistant:#d9fbe5;  /* оператор (assistant), справа, зеленоватый */
+      --ok:#DCFCE7; --ok-border:#86EFAC;
+      --err:#FEE2E2; --err-border:#FCA5A5;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;background:var(--bg);color:var(--text);
+      font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;
+      display:flex;flex-direction:column;overflow:hidden;
+    }
+
+    .header{
+      background:var(--panel);border-bottom:1px solid var(--line);
+      padding:8px 12px;
+      position:sticky;top:0;z-index:100;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;
+    }
+    .title{font-weight:600}
+    .header-actions{display:flex;gap:8px}
+    .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+
+    .scroll{flex:1 1 auto;min-height:0;overflow:auto}
+
+    .list{padding:12px;display:flex;flex-direction:column;gap:8px}
+    .empty{
+      padding:24px;color:#6b7280;text-align:center;background:var(--panel);
+      border:1px solid var(--line);margin:12px;border-radius:10px
+    }
+    .msg{max-width:75%;width:fit-content;display:flex;flex-direction:column;gap:4px}
+    .msg.user{align-self:flex-start}
+    .msg.assistant{align-self:flex-end}
+    .bubble{padding:10px 12px;border:1px solid var(--line);border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--user)}
+    .msg.assistant .bubble{background:var(--assistant)}
+    .time{font-size:11px;color:#6b7280;padding:0 4px}
+    .actions{margin-left:auto;opacity:.0;transition:opacity .15s}
+    .msg:hover .actions{opacity:1}
+    .icon-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 6px;font-size:11px;cursor:pointer}
+
+    .notice{
+      position:sticky; top:0; z-index:90;
+      margin:0 12px 8px; border-radius:10px; padding:8px 12px; display:none;
+      border:1px solid transparent; background:#fff;
+    }
+    .notice.ok{display:block;background:var(--ok);border-color:var(--ok-border)}
+    .notice.err{display:block;background:var(--err);border-color:var(--err-border)}
+  </style>
+</head>
+
+{% set _deal_id = deal_id | default(None) %}
+{% set _portal_domain = domain | default(None) %}
+
+<body
+  data-deal-id="{{ _deal_id if _deal_id is not none else '' }}"
+  data-domain="{{ _portal_domain if _portal_domain is not none else '' }}"
+>
+  <div class="header">
+    <div class="title">Диалог{% if conversation_id %} #{{ conversation_id }}{% endif %}</div>
+    <div class="header-actions">
+      <button id="send-contact-btn" class="btn"
+              {% if not _deal_id %}title="ID сделки не передан в шаблон" disabled{% endif %}>
+        Отправить контакт ответственного
+      </button>
+    </div>
+  </div>
+
+  <div id="notice" class="notice" aria-live="polite"></div>
+
+  <div class="scroll">
+    {% if not has_msgs %}
+      <div class="empty">
+        {% if empty_reason %}{{ empty_reason }}{% else %}Нет сообщений в этом диалоге.{% endif %}
+      </div>
+    {% else %}
+      <div class="list" id="list">
+        {% for m in msgs %}
+          {% set t = (m.message_type | int) %}
+          {% if (t == 0 or t == 1) and not (m.is_system | default(false)) and not (m.private | default(false)) %}
+            {% set role = 'user' if t == 0 else 'assistant' %}
+            <div class="msg {{ role }}"
+                 data-ts="{{ m.created_at or 0 }}"
+                 data-content="{{ (m.content or '') | e }}">
+              <div class="bubble"><div class="text"></div></div>
+              <div class="time" title="{{ m.created_at }}">{{ m.created_at }}</div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+<script src="//api.bitrix24.com/api/v1/"></script>
+<script>
+(function(){
+  var FIXED_DIALOG_HEIGHT = 660;
+  var EMPTY_HEIGHT = 220;
+
+  function resizeB24(height){
+    try{
+      if (!window.BX24 || typeof BX24.resizeWindow !== 'function') return;
+      var doResize = function(){
+        var w = window.innerWidth || document.documentElement.clientWidth || 800;
+        BX24.resizeWindow(w, height);
+      };
+      if (typeof BX24.init === 'function'){ BX24.init(doResize); } else { doResize(); }
+    }catch(e){}
+  }
+
+  var noticeEl = document.getElementById('notice');
+  function showNotice(text, isError){
+    if (!noticeEl) return;
+    noticeEl.textContent = text || '';
+    noticeEl.className = 'notice ' + (isError ? 'err' : 'ok');
+    if (text){
+      clearTimeout(showNotice._t);
+      showNotice._t = setTimeout(function(){
+        noticeEl.className = 'notice';
+        noticeEl.textContent = '';
+      }, 6000);
+    }
+  }
+
+  var sendBtn = document.getElementById('send-contact-btn');
+  if (sendBtn){
+    sendBtn.addEventListener('click', async function(){
+      try {
+        var dealId = document.body.dataset.dealId || '';
+        var portalDomain = document.body.dataset.domain || '';
+
+        if (!dealId){ showNotice('Не указан ID сделки', true); return; }
+        if (!portalDomain){ showNotice('Не указан BX24 портал', true); return; }
+
+        if (!confirm('Отправить контакт ответственого по сделке #' + dealId +
+                     ' (портал: ' + portalDomain + ')?')) return;
+
+        sendBtn.disabled = true;
+        showNotice('Отправляем контакт…', false);
+
+        const resp = await fetch('https://lk.mbk-chat.ru/cw/send_contact', {
+          method: 'POST',
+          body: JSON.stringify({ deal_id: dealId, portal_domain: portalDomain })
+        });
+
+        const raw = await resp.text();
+
+        let data;
+        try {
+          data = raw ? JSON.parse(raw) : null;
+        } catch (e) {
+        }
+
+        if (!resp.ok) {
+          showNotice(`Ошибка ${resp.status}: ${data?.message || raw || 'Нет сообщения'}`, true);
+          return;
+        }
+
+        const success = data && data.success === true;
+        const msg = (data && data.message) ? data.message : (raw || 'Нет сообщения');
+        showNotice(msg, !success);
+
+      } catch(err){
+        showNotice('Ошибка отправки: ' + (err && err.message ? err.message : String(err)), true);
+      } finally {
+        sendBtn.disabled = false;
+      }
+    });
+  }
+
+  var scroller = document.querySelector('.scroll');
+  var list = document.getElementById('list');
+
+  if (!list){
+    resizeB24(EMPTY_HEIGHT);
+    return;
+  }
+
+  var urlFindRe = /\b((?:https?:\/\/|www\.)[^\s<>"']+)/g;
+  var urlTestRe = /\b(?:https?:\/\/|www\.)[^\s<>"']+/;
+  var fileciteRe = /\uE208filecite[\s\S]*?\uE209/g;
+
+  function linkifyTextNode(node){
+    var text = node.nodeValue, match, last = 0, frag = document.createDocumentFragment();
+    urlFindRe.lastIndex = 0;
+    while ((match = urlFindRe.exec(text)) !== null){
+      var start = match.index, url = match[0];
+      if (start > last) frag.appendChild(document.createTextNode(text.slice(last, start)));
+      var href = url.startsWith('www.') ? ('https://' + url) : url;
+      var a = document.createElement('a');
+      a.href = href; a.target = '_blank'; a.rel = 'nofollow noopener noreferrer'; a.textContent = url;
+      frag.appendChild(a);
+      last = start + url.length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    node.parentNode.replaceChild(frag, node);
+  }
+  function linkify(el){
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+      acceptNode: function(n){
+        if (!n.nodeValue) return NodeFilter.FILTER_REJECT;
+        return urlTestRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    var nodes = [], cur; while ((cur = walker.nextNode())) nodes.push(cur);
+    nodes.forEach(linkifyTextNode);
+  }
+
+  function fmt(ts){
+    var d = new Date((Number(ts)||0)*1000), now = new Date();
+    var t = d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    if (d.toDateString() === now.toDateString()) return t;
+    var ds = d.toLocaleDateString(undefined,{day:'2-digit',month:'2-digit',year:'numeric'});
+    return ds+' '+t;
+  }
+  var listEl = document.getElementById('list');
+  if (listEl){
+    var msgs = Array.from(listEl.querySelectorAll('.msg'));
+    msgs.forEach(function(el){
+      var raw = (el.dataset.content||'').replace(fileciteRe,'').trim();
+      var textEl = el.querySelector('.text');
+      textEl.textContent = raw;
+      linkify(textEl);
+      var timeEl = el.querySelector('.time');
+      var ts = el.dataset.ts || 0;
+      timeEl.textContent = fmt(ts);
+    });
+
+    Array.from(listEl.children)
+      .sort(function(a,b){return (Number(a.dataset.ts)||0)-(Number(b.dataset.ts)||0);})
+      .forEach(function(n){listEl.appendChild(n);});
+
+    requestAnimationFrame(function(){
+      var scroller = document.querySelector('.scroll');
+      if (scroller){ scroller.scrollTop = scroller.scrollHeight; }
+      resizeB24(FIXED_DIALOG_HEIGHT);
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
