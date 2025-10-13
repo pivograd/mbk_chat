@@ -60,19 +60,9 @@ for agent_cfg in BOTS_CFG:
             partial(handle_from_chatwoot, agent_code=agent_cfg.agent_code, kind=transport.kind, inbox_id=transport.chatwoot.inbox_id)
         )
 
-# for agent_name in BOTS:
-#     # Входящие сообщения из Green API
-#     app.router.add_post(f"/webhook/v3/{agent_name}", partial(handle_greenapi_to_chatwoot, agent_name=agent_name))
-#     # Исходящие сообщения из Chatwoot
-#     app.router.add_post(f"/webhook/chatwoot/v3/{agent_name}",partial(handle_chatwoot_to_greenapi, agent_name=agent_name))
-
-# http://185.239.142.177:5019
-
-# Подключаем БД
 alembic_upgrade_head()
 app.on_startup.append(init_db)
 app.on_cleanup.append(close_db)
-import os
 
 
 if __name__ == "__main__":
