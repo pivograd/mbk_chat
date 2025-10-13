@@ -1,0 +1,39 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest 
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/mbk_key
+          chmod 600 ~/.ssh/mbk_key
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      # здесь можно вставить шаги тестов/линтеров
+
+      - name: Run deploy script on server
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -i ~/.ssh/mbk_key \
+              -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=yes \
+              "$SSH_USER@$SSH_HOST" \
+              'bash -lc "/opt/mbk/mbk_chat/deploy.sh"'
