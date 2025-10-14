@@ -81,7 +81,7 @@ async def inbound_wappi(request, agent_code, inbox_id):
                 return web.Response(text="SKIP Не найден контакт в CW", status=200)
             cw_conversation_id = await cw_client.get_conversation_id(cw_contact_id, inbox_id)
             if not cw_conversation_id:
-                await send_dev_telegram_log(f'[inbound_wappi]\nНе найден диалог в CW!МБК ЭЩКЕРЕ\ncontact_identifier: {identifier}\ninbox_id: {inbox_id}',
+                await send_dev_telegram_log(f'[inbound_wappi]\nНе найден диалог в CW!\ncontact_identifier: {identifier}\ninbox_id: {inbox_id}',
                                             'WARNING')
                 return web.Response(text="SKIP Не найден диалог в CW!", status=200)
             await cw_client.send_message(cw_conversation_id, message_text, message_type=0)

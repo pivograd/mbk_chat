@@ -7,7 +7,7 @@ import aiohttp
 
 from telegram.send_log import send_dev_telegram_log
 from utils.normalize_phone import normalize_phone
-from utils.split_message_by_links import split_message_by_links
+from utils.split_message_by_links import split_message_by_links, FILE_LINK_REGEX
 
 
 class WappiError(Exception):
@@ -297,7 +297,6 @@ class WappiClient:
             txt = part.lstrip(".,!? \t;:-").strip()
             if len(txt) < 2:
                 continue
-            from settings import FILE_LINK_REGEX
             if re.match(FILE_LINK_REGEX, txt, re.IGNORECASE):
                 try:
                     if txt.endswith(".pdf"):
