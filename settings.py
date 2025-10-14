@@ -74,7 +74,7 @@ MODEL_MAIN = "gpt-5"
 MODEL_MINI = "gpt-5-mini"
 TRANSCRIBE_MODEL = "gpt-4o-transcribe"
 
-SERVER_PROMPT_PATH = '/opt/chatwoot_agents_mbk/openai_agents/prompts'
+SERVER_PROMPT_PATH = '/opt/mbk/mbk_chat/openai_agents/prompts'
 STYLE_BLOCK_PATH = f"{SERVER_PROMPT_PATH}/reusable/style.txt"
 DESIGN_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/design_agent.txt"
 MANAGER_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/manager_agent.txt"
