@@ -20,7 +20,7 @@ async def handle_deal_change_stage(request):
         domain = parsed.get("auth[domain]")
 
         if not deal_id or not domain:
-            await send_dev_telegram_log(f'[handle_deal_change_stage]\n нет id сделки или домена\nparsed_data: {parsed}')
+            await send_dev_telegram_log(f'[handle_deal_change_stage]\n нет id сделки или домена\nparsed_data: {parsed}', 'WARNING')
             return web.Response(text='Не передан домен или id сделки', status=400)
 
         deal_id = deal_id[0]
