@@ -19,6 +19,8 @@ from db.models import bx24_deal  # noqa: F401
 from db.models import chatwoot_conversation  # noqa: F401
 from db.models.bx_handler_process import BxHandlerProcess  # noqa: F401
 from db.models.bx_processed_call import BxProcessedCall  # noqa: F401
+from db.models.contact_routing import ContactRouting  # noqa: F401
+from db.models.rr_cursor import RRCursor  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

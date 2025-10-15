@@ -9,6 +9,8 @@ from db.models.bx24_deal import Bx24Deal  # noqa: F401
 from db.models.chatwoot_conversation import ChatwootConversation  # noqa: F401
 from db.models.bx_handler_process import BxHandlerProcess  # noqa: F401
 from db.models.bx_processed_call import BxProcessedCall  # noqa: F401
+from db.models.contact_routing import ContactRouting  # noqa: F401
+from db.models.rr_cursor import RRCursor  # noqa: F401
 
 def make_engine() -> AsyncEngine:
     return create_async_engine(
