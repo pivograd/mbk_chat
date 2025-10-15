@@ -12,7 +12,6 @@ class ContactRouting(Base):
     agent_code: Mapped[str] = mapped_column(String(64), index=True)
     kind: Mapped[str] = mapped_column(String(8))  # 'wa' | 'tg'
     inbox_id: Mapped[int] = mapped_column(Integer)
-    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=text("now()"))
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=text("now()"))
 

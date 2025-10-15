@@ -1,7 +1,21 @@
+import asyncio
+import hashlib
 import os
 from typing import List, Literal, Annotated, Union, Optional
 from pydantic import BaseModel, Field
+from sqlalchemy import select, text, insert, update, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+from db.models.contact_routing import ContactRouting
+from db.models.rr_cursor import RRCursor
+from telegram.send_log import send_dev_telegram_log
 from wappi.wappi_client import WappiClient
+
+
+
+LOCK_TRIES = 25
+LOCK_SLEEP_SEC = 0.2
 
 class ChatwootCfg(BaseModel):
     host: str = Field(..., description="CHATWOOT_HOST")
@@ -20,12 +34,14 @@ class ChatwootBinding(BaseModel):
     inbox_id: int
     assignee_id: Optional[str] = None
 
-class WAConfig(BaseModel):
-    kind: Literal["wa"] = "wa"
-    base_url: str = os.getenv('GREEN_API_URL')
+class TransportConfig(BaseModel):
     instance_id: str
     api_token: str
     chatwoot: ChatwootBinding
+
+class WAConfig(TransportConfig):
+    kind: Literal["wa"] = "wa"
+    base_url: str = os.getenv('GREEN_API_URL')
 
     def get_green_api_params(self) -> tuple[str, str, str]:
         """
@@ -33,11 +49,8 @@ class WAConfig(BaseModel):
         """
         return self.base_url, self.instance_id, self.api_token
 
-class TGConfig(BaseModel):
+class TGConfig(TransportConfig):
     kind: Literal["tg"] = "tg"
-    api_token: str
-    instance_id: str
-    chatwoot: ChatwootBinding
 
     def get_waapi_params(self) -> tuple[str, str]:
         """
@@ -84,3 +97,178 @@ class AgentCfg(BaseModel):
         if transports := self.transports_of_kind("tg"):
             return transports[0]
         return None
+
+    async def pick_transport_old(self, session: AsyncSession, agent_code, kind, phone):
+        """
+        Возвращает конфиг транспорта
+        Если пользователю уже был присвоен конкретный транспорт - то вернет его
+        Если не был, то присвоит и вернет присвоенный
+        """
+        q = await session.execute(
+            select(ContactRouting).where(
+                ContactRouting.phone == phone,
+                ContactRouting.agent_code == agent_code,
+                ContactRouting.kind == kind,
+            )
+        )
+        binding = q.scalar_one_or_none()
+
+        transports = self.transports_of_kind(kind)
+        inboxes = [t.chatwoot.inbox_id for t in transports]
+        INBOX_TO_TRANSPORT = {t.chatwoot.inbox_id: t for t in transports}
+        if not transports:
+            await send_dev_telegram_log(f'[pick_transport]\nНет транспорта для {agent_code}:{kind}', 'ERROR')
+            raise LookupError(f'No transports for {agent_code}:{kind}')
+
+        if binding and binding.inbox_id in inboxes:
+            return INBOX_TO_TRANSPORT[binding.inbox_id]
+
+        lock_key = f"{agent_code}:{kind}"
+        key_bytes = lock_key.encode()
+        lock_hash = int.from_bytes(hashlib.sha1(key_bytes).digest()[:8], "big", signed=True)
+
+        await session.execute(text("SELECT pg_advisory_xact_lock(:k)").bindparams(k=lock_hash))
+        qcur = await session.execute(select(RRCursor).where(RRCursor.agent_code_and_kind == lock_key))
+        rr_cursor = qcur.scalar_one_or_none()
+        if not rr_cursor:
+            await session.execute(insert(RRCursor).values(agent_code=agent_code, kind=kind, last_index=-1))
+            await session.flush()
+            next_index = 0
+        else:
+            next_index = (rr_cursor.last_index + 1) % len(inboxes)
+            await session.execute(
+                update(RRCursor)
+                .where(RRCursor.id == rr_cursor.id)
+                .values(last_index=next_index, updated_at=text("now()"))
+            )
+        selected_inbox = inboxes[next_index]
+
+        if binding:
+            # Таких ситуаций быть не должно по идее
+            await send_dev_telegram_log(f'[pick_transport]\n@pivograd\nТакого быть было не должно..\nbinding.id: {binding.id}', 'DEV')
+            await session.execute(
+                update(ContactRouting)
+                .where(ContactRouting.id == binding.id)
+                .values(inbox_id=selected_inbox, updated_at=text("now()"))
+            )
+        else:
+            await session.execute(
+                insert(ContactRouting).values(
+                    phone=phone,
+                    agent_code=agent_code,
+                    kind=kind,
+                    inbox_id=selected_inbox,
+                )
+            )
+
+        return INBOX_TO_TRANSPORT[selected_inbox]
+
+    async def pick_transport(self, session: AsyncSession, agent_code: str, kind: str, phone: str) -> Optional[Transport]:
+        """
+        Возвращает конфиг транспорта
+        Если пользователю уже был присвоен конкретный транспорт - то вернет его
+        Если не был, то присвоит и вернет присвоенный
+        """
+        try:
+            transports = self.transports_of_kind(kind)
+            cfg_by_inbox = {t.chatwoot.inbox_id: t for t in transports}
+            inboxes = [t.chatwoot.inbox_id for t in transports]
+            if not transports:
+                await send_dev_telegram_log(f'[pick_transport]\nНет транспорта для {agent_code}:{kind}', 'ERROR')
+                raise LookupError(f'No transports for {agent_code}:{kind}')
+
+            q = await session.execute(
+                select(ContactRouting).where(
+                    ContactRouting.phone == phone,
+                    ContactRouting.agent_code == agent_code,
+                    ContactRouting.kind == kind,
+                )
+            )
+            binding = q.scalar_one_or_none()
+
+            if binding and binding.inbox_id in inboxes:
+                return cfg_by_inbox[binding.inbox_id]
+
+            lock_key = f"{agent_code}:{kind}"
+            lock_hash = int.from_bytes(hashlib.sha1(lock_key.encode()).digest()[:8], "big", signed=True)
+
+            async with session.bind.connect() as conn:
+                async with conn.begin():
+                    locked = False
+                    for _ in range(LOCK_TRIES):
+                        res = await conn.execute(
+                            text("SELECT pg_try_advisory_xact_lock(:k)").bindparams(k=lock_hash)
+                        )
+                        if res.scalar():
+                            locked = True
+                            break
+                        await asyncio.sleep(LOCK_SLEEP_SEC)
+
+                    if not locked:
+                        await send_dev_telegram_log(
+                            f'[pick_transport]\nНе удалось получить advisory lock для {lock_key} за отведённое время',
+                            'ERROR'
+                        )
+                        raise TimeoutError(f'pick_transport lock timeout for {lock_key}')
+
+                    # Повторно получаем binding уже под локом
+                    q2 = await conn.execute(
+                        select(ContactRouting).where(
+                            ContactRouting.phone == phone,
+                            ContactRouting.agent_code == agent_code,
+                            ContactRouting.kind == kind,
+                        )
+                    )
+                    binding_locked = q2.scalar_one_or_none()
+                    if binding_locked and binding_locked.inbox_id in inboxes:
+                        return cfg_by_inbox[binding_locked.inbox_id]
+
+                    qcur = await conn.execute(
+                        select(RRCursor).where(
+                            RRCursor.agent_code_and_kind == lock_key
+                        )
+                    )
+                    rr = qcur.scalar_one_or_none()
+
+                    if rr is None:
+                        await conn.execute(
+                            pg_insert(RRCursor.__table__).values(
+                                agent_code=agent_code,
+                                kind=kind,
+                                last_index=-1,
+                                updated_at=func.now(),
+                            ).on_conflict_do_nothing()
+                        )
+                        next_index = 0
+                    else:
+                        next_index = (rr.last_index + 1) % len(inboxes)
+                        await conn.execute(
+                            update(RRCursor)
+                            .where(RRCursor.id == rr.id)
+                            .values(last_index=next_index, updated_at=func.now())
+                        )
+
+                    selected_inbox = inboxes[next_index]
+
+                    stmt = pg_insert(ContactRouting.__table__).values(
+                        phone=phone,
+                        agent_code=agent_code,
+                        kind=kind,
+                        inbox_id=selected_inbox,
+                        updated_at=func.now(),
+                    ).on_conflict_do_update(
+                        index_elements=[
+                            ContactRouting.__table__.c.phone,
+                            ContactRouting.__table__.c.agent_code,
+                            ContactRouting.__table__.c.kind,
+                        ],
+                        set_={
+                            "inbox_id": selected_inbox,
+                            "updated_at": func.now(),
+                        },
+                    )
+                    await conn.execute(stmt)
+
+                    return cfg_by_inbox[selected_inbox]
+        except Exception as e:
+            await send_dev_telegram_log(f'[pick_transport]\nКритическая ошибка!!\nERROR: {e}')
