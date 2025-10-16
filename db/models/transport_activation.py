@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from bx24.models.bitrix_user_token import Base
 from settings import BOTS_CFG
-from telegram.send_log import send_dev_telegram_log
+from telegram.send_log import send_dev_telegram_log, safe_log
 
 
 class TransportActivation(Base):
@@ -21,6 +21,7 @@ async def bootstrap_transport_activation(session: AsyncSession):
     Создаёт в таблице TransportActivation
     """
     try:
+        await safe_log(f'[bootstrap_transport_activation]\nВошли!', 'DEV')
         inbox_ids = set()
         for agent_cfg in BOTS_CFG:
             for transport in agent_cfg.transports:
@@ -31,7 +32,7 @@ async def bootstrap_transport_activation(session: AsyncSession):
                     continue
 
         if not inbox_ids:
-            await send_dev_telegram_log(f'[bootstrap_transport_activation]\nПУстойreturn0!\nРот его возвращал.','DEV')
+            await safe_log(f'[bootstrap_transport_activation]\nПУстойreturn0!\nРот его возвращал.','DEV')
             return
 
         # TODO здесь можно проверять активность инстансов, пока считаем, что при запуске все активные.
@@ -44,6 +45,6 @@ async def bootstrap_transport_activation(session: AsyncSession):
 
         await session.execute(stmt)
         await session.commit()
-        await send_dev_telegram_log(f'[bootstrap_transport_activation]\nАктивные транспорты сконфигурированы в БД!', 'INFO')
+        await safe_log(f'[bootstrap_transport_activation]\nАктивные транспорты сконфигурированы в БД!', 'DEV')
     except Exception as e:
-        await send_dev_telegram_log(f'[bootstrap_transport_activation]\nКритическая ошибка!\nError: {e}', 'ERROR')
+        await safe_log(f'[bootstrap_transport_activation]\nКритическая ошибка!\nError: {e}', 'ERROR')

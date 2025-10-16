@@ -63,4 +63,12 @@ async def send_dev_telegram_log(message: str, log_level: str = 'INFO'):
                 if resp.status != 200:
                     print(f"Ошибка отправки лога в ТГ: {await resp.text()}. СООБЩЕНИЕ: {message}")
     except Exception as e:
-        pass
+        print('Ошибка при отправке лога(')
+        raise e
+
+async def safe_log(msg, level='DEV'):
+    try:
+        await send_dev_telegram_log(msg, level)
+    except Exception as e:
+        # Безусловный дубль в stdout, чтобы точно увидеть хоть что-то
+        print(f"[send_dev_telegram_log FAILED] level={level} msg={msg} error={e}", flush=True)
