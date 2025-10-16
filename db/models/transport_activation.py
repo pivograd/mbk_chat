@@ -30,7 +30,7 @@ async def bootstrap_transport_activation(session: AsyncSession):
                     inbox_ids.add(inbox_id)
                 except (TypeError, ValueError):
                     continue
-
+        await safe_log(f'[bootstrap_transport_activation]\nВошли!3', 'DEV')
         if not inbox_ids:
             await safe_log(f'[bootstrap_transport_activation]\nПУстойreturn0!\nРот его возвращал.','DEV')
             return
@@ -42,6 +42,7 @@ async def bootstrap_transport_activation(session: AsyncSession):
             .values(rows)
             .on_conflict_do_nothing(index_elements=["inbox_id"])
         )
+        await safe_log(f'[bootstrap_transport_activation]\nВошли4!', 'DEV')
 
         await session.execute(stmt)
         await session.commit()
