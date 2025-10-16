@@ -1,3 +1,5 @@
+import traceback
+
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
@@ -48,4 +50,6 @@ async def bootstrap_transport_activation(session: AsyncSession):
         await session.commit()
         await safe_log(f'[bootstrap_transport_activation]\nАктивные транспорты сконфигурированы в БД!', 'DEV')
     except Exception as e:
-        await safe_log(f'[bootstrap_transport_activation]\nКритическая ошибка!\nError: {e}', 'ERROR')
+        tb = traceback.format_exc()
+        await safe_log(f'[bootstrap_transport_activation]\nКритическая ошибка!\nError: {tb}', 'ERROR')
+        raise
