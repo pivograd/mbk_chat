@@ -23,9 +23,14 @@ def make_engine() -> AsyncEngine:
 async def init_db(app):
     engine = make_engine()
     app["db_engine"] = engine
-    app["db_sessionmaker"] = async_sessionmaker(bind=engine, expire_on_commit=False)
-    Bx24Deal.configure_sessionmaker(app["db_sessionmaker"])
-    await bootstrap_transport_activation(app["db_sessionmaker"])
+
+    local_session = async_sessionmaker(bind=engine, expire_on_commit=False)
+    app["db_sessionmaker"] = local_session
+
+    Bx24Deal.configure_sessionmaker(local_session)
+
+    async with local_session() as session:
+        await bootstrap_transport_activation(session)
 
 async def close_db(app):
     engine: AsyncEngine = app["db_engine"]
