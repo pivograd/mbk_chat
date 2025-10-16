@@ -31,6 +31,7 @@ async def bootstrap_transport_activation(session: AsyncSession):
                     continue
 
         if not inbox_ids:
+            await send_dev_telegram_log(f'[bootstrap_transport_activation]\nПУстойreturn0!\nРот его возвращал.','DEV')
             return
 
         # TODO здесь можно проверять активность инстансов, пока считаем, что при запуске все активные.
