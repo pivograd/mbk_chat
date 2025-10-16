@@ -51,5 +51,5 @@ async def bootstrap_transport_activation(session: AsyncSession):
         await safe_log(f'[bootstrap_transport_activation]\nАктивные транспорты сконфигурированы в БД!', 'DEV')
     except Exception as e:
         tb = traceback.format_exc()
-        await safe_log(f'[bootstrap_transport_activation]\nКритическая ошибка!\nError: {tb}', 'ERROR')
+        await safe_log(f'[bootstrap_transport_activation]\nКритическая ошибка!\nError: {tb}', 'DEV')
         raise
