@@ -11,6 +11,7 @@ from db.models.bx_handler_process import BxHandlerProcess  # noqa: F401
 from db.models.bx_processed_call import BxProcessedCall  # noqa: F401
 from db.models.contact_routing import ContactRouting  # noqa: F401
 from db.models.rr_cursor import RRCursor  # noqa: F401
+from db.models.transport_activation import TransportActivation, bootstrap_transport_activation  # noqa: F401
 
 def make_engine() -> AsyncEngine:
     return create_async_engine(
@@ -24,6 +25,7 @@ async def init_db(app):
     app["db_engine"] = engine
     app["db_sessionmaker"] = async_sessionmaker(bind=engine, expire_on_commit=False)
     Bx24Deal.configure_sessionmaker(app["db_sessionmaker"])
+    await bootstrap_transport_activation(app["db_sessionmaker"])
 
 async def close_db(app):
     engine: AsyncEngine = app["db_engine"]

@@ -15,7 +15,7 @@ from telegram.send_log import send_dev_telegram_log
 from utils.download_to_temp_file import download_to_temp
 from utils.ffmpeg_convert_to_wav import convert_to_wav_via_imageio_ffmpeg
 from utils.normalize_phone import normalize_phone
-from settings import AGENTS_BY_CODE
+from settings import AGENTS_BY_CODE, INBOX_TO_TRANSPORT
 
 
 async def inbound_green_api(request, agent_code, inbox_id):
@@ -25,7 +25,7 @@ async def inbound_green_api(request, agent_code, inbox_id):
     """
     try:
         data = await request.json()
-        wa_config = AGENTS_BY_CODE[agent_code].get_wa_cfg()
+        wa_config = INBOX_TO_TRANSPORT.get(inbox_id)
         cw_config = wa_config.chatwoot
 
         if not data.get("typeWebhook") == "incomingMessageReceived":

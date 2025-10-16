@@ -24,10 +24,10 @@ async def handle_from_chatwoot(request, agent_code, kind, inbox_id):
     message = data.get("content", "")
 
     if message.startswith("[Менеджер по строительству]"):
-        await send_manager_contact_card(data)
+        await send_manager_contact_card(data, kind, inbox_id)
         return web.json_response({"status": "ok"})
     elif message.startswith("[Мой контакт]"):
-        await send_agent_contact_card(data)
+        await send_agent_contact_card(data, kind, inbox_id)
         return web.json_response({"status": "ok"})
 
     if kind == "wa":

@@ -6,7 +6,7 @@ import aiohttp
 from aiohttp import web
 
 from chatwoot_api.chatwoot_client import ChatwootClient
-from settings import AGENTS_BY_CODE
+from settings import INBOX_TO_TRANSPORT
 from openai_agents.functions.analyze_image import analyze_image
 from openai_agents.transcribation_client import TranscribeClient, _extract_transcription_text
 from telegram.send_log import send_dev_telegram_log
@@ -56,7 +56,7 @@ async def inbound_wappi(request, agent_code, inbox_id):
                     header = "🎤 Голосовое сообщение"
                     message_text = f"{header}:\nСсылка на файл c аудио: {download_url}\n\n[Транскрибация]:\n{audio_text.strip()}"
 
-        tg_config = AGENTS_BY_CODE[agent_code].get_tg_cfg()
+        tg_config = INBOX_TO_TRANSPORT[inbox_id]
         wappi_instance_id, wappi_token = tg_config.get_waapi_params()
 
         async with WappiClient(wappi_token, wappi_instance_id) as client:

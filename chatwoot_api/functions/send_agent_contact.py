@@ -9,7 +9,7 @@ from green_api.send_text import send_text_message
 from telegram.send_log import send_dev_telegram_log
 
 
-async def send_agent_contact_card(data):
+async def send_agent_contact_card(data, kind, inbox_id):
     """
     Функция для отправки контакта агента клиенту в нужный источник
     """

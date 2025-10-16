@@ -29,16 +29,12 @@ async def send_contact(
         last_name: str,
         contact_phone: str,
         client_phone: str,
-        agent_name: Optional[str] = None,
-        wa_config: Optional[WAConfig] = None
+        wa_config: WAConfig,
 ):
     """
     Отправляет контакт клиенту в WhatsApp через Green API.
     """
     try:
-        if agent_name:
-            wa_config = AGENTS_BY_CODE[agent_name].get_wa_cfg()
-
         base_url, instance_id, api_token = wa_config.get_green_api_params()
 
         url = f"{base_url}/waInstance{instance_id}/sendContact/{api_token}"

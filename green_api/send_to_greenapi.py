@@ -1,16 +1,16 @@
 import requests
 import re
 
-from settings import AGENTS_BY_CODE
+from settings import INBOX_TO_TRANSPORT
 from utils.split_message_by_links import split_message_by_links, FILE_LINK_REGEX
 
 
-def send_to_greenapi(bot_name, phone, message, attachments=list):
+def send_to_greenapi(bot_name, phone, message, inbox_id):
     """
     Отправляет сообщение в WhatsApp через Green API
     """
     # Получаем конфигурацию бота
-    wa_config = AGENTS_BY_CODE[bot_name].get_wa_cfg()
+    wa_config = INBOX_TO_TRANSPORT.get(inbox_id)
     base_url, instance_id, api_token = wa_config.get_green_api_params()
     # Формируем ID чата для WhatsApp
     chat_id = f"{phone}@c.us"
@@ -38,15 +38,3 @@ def send_to_greenapi(bot_name, phone, message, attachments=list):
             }
             url_text = f"{base_url}/waInstance{instance_id}/sendMessage/{api_token}"
             requests.post(url_text, headers=headers, json=payload_text)
-
-    # 4. ОТПРАВКА ВЛОЖЕНИЙ ИЗ CHATWOOT
-    for attachment in attachments:
-        file_url = attachment.get("data_url", "")
-        payload = {
-            "chatId": chat_id,
-            "urlFile": file_url,
-            "fileName": attachment.get("file_name", "file"),
-            "caption": message if message else ""
-        }
-        url = f"{base_url}/waInstance{instance_id}/sendFileByUrl/{api_token}"
-        requests.post(url, headers=headers, json=payload)

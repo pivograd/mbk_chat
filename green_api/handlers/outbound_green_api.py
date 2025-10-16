@@ -10,13 +10,12 @@ async def outbound_green_api(request, agent_code, inbox_id):
     """
     data = await request.json()
     message = data.get("content", "")
-    attachments = data.get("attachments", [])
     conversation = data.get("conversation", {})
     sender_meta = conversation.get("meta", {}).get("sender", {})
     phone = sender_meta.get("phone_number", "").lstrip("+")
     if not phone:
         return web.json_response({"status": "not phone"})
 
-    send_to_greenapi(agent_code, phone, message, attachments)
+    send_to_greenapi(agent_code, phone, message, inbox_id)
 
     return web.json_response({"status": "received"})

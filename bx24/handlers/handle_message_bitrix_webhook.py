@@ -27,10 +27,14 @@ async def handle_message_bitrix_webhook(request):
         # Инициализируем переменные
         name = params.get('name', 'Без имени')
         phone = params.get('phone', '')
+        phone = normalize_phone(phone)
         comment = params.get('comment', '')
         message = params.get('message', 'Здравствуйте!')
         channel = params.get('channel')
-        wa_cfg = AGENTS_BY_CODE[channel].get_wa_cfg()
+        session_maker = request.app["db_sessionmaker"]
+        async with session_maker() as session:
+            wa_cfg = await AGENTS_BY_CODE[channel].pick_transport(session, 'wa', phone)
+
         if not wa_cfg:
             await send_dev_telegram_log(f'[handle_message_bitrix_webhook]\nНе удалось получить WAConfig для Агента: {channel}', 'WARNING')
             return web.Response(text="❌ Не указан агент", status=400)

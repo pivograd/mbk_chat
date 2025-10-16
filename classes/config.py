@@ -84,86 +84,17 @@ class AgentCfg(BaseModel):
 
     def get_wa_cfg(self) -> Optional[Transport]:
         """
-        Возвращает первый WAConfig из транспортов агента
+        Возвращает WAConfig из транспортов агента
         """
-        if transports := self.transports_of_kind("wa"):
-            return transports[0]
-        return None
+        ...
 
     def get_tg_cfg(self) -> Optional[Transport]:
         """
         Возвращает первый TGConfig из транспортов агента
         """
-        if transports := self.transports_of_kind("tg"):
-            return transports[0]
-        return None
+        ...
 
-    async def pick_transport_old(self, session: AsyncSession, agent_code, kind, phone):
-        """
-        Возвращает конфиг транспорта
-        Если пользователю уже был присвоен конкретный транспорт - то вернет его
-        Если не был, то присвоит и вернет присвоенный
-        """
-        q = await session.execute(
-            select(ContactRouting).where(
-                ContactRouting.phone == phone,
-                ContactRouting.agent_code == agent_code,
-                ContactRouting.kind == kind,
-            )
-        )
-        binding = q.scalar_one_or_none()
-
-        transports = self.transports_of_kind(kind)
-        inboxes = [t.chatwoot.inbox_id for t in transports]
-        INBOX_TO_TRANSPORT = {t.chatwoot.inbox_id: t for t in transports}
-        if not transports:
-            await send_dev_telegram_log(f'[pick_transport]\nНет транспорта для {agent_code}:{kind}', 'ERROR')
-            raise LookupError(f'No transports for {agent_code}:{kind}')
-
-        if binding and binding.inbox_id in inboxes:
-            return INBOX_TO_TRANSPORT[binding.inbox_id]
-
-        lock_key = f"{agent_code}:{kind}"
-        key_bytes = lock_key.encode()
-        lock_hash = int.from_bytes(hashlib.sha1(key_bytes).digest()[:8], "big", signed=True)
-
-        await session.execute(text("SELECT pg_advisory_xact_lock(:k)").bindparams(k=lock_hash))
-        qcur = await session.execute(select(RRCursor).where(RRCursor.agent_code_and_kind == lock_key))
-        rr_cursor = qcur.scalar_one_or_none()
-        if not rr_cursor:
-            await session.execute(insert(RRCursor).values(agent_code=agent_code, kind=kind, last_index=-1))
-            await session.flush()
-            next_index = 0
-        else:
-            next_index = (rr_cursor.last_index + 1) % len(inboxes)
-            await session.execute(
-                update(RRCursor)
-                .where(RRCursor.id == rr_cursor.id)
-                .values(last_index=next_index, updated_at=text("now()"))
-            )
-        selected_inbox = inboxes[next_index]
-
-        if binding:
-            # Таких ситуаций быть не должно по идее
-            await send_dev_telegram_log(f'[pick_transport]\n@pivograd\nТакого быть было не должно..\nbinding.id: {binding.id}', 'DEV')
-            await session.execute(
-                update(ContactRouting)
-                .where(ContactRouting.id == binding.id)
-                .values(inbox_id=selected_inbox, updated_at=text("now()"))
-            )
-        else:
-            await session.execute(
-                insert(ContactRouting).values(
-                    phone=phone,
-                    agent_code=agent_code,
-                    kind=kind,
-                    inbox_id=selected_inbox,
-                )
-            )
-
-        return INBOX_TO_TRANSPORT[selected_inbox]
-
-    async def pick_transport(self, session: AsyncSession, agent_code: str, kind: str, phone: str) -> Optional[Transport]:
+    async def pick_transport(self, session: AsyncSession, kind: str, phone: str) -> Optional[Transport]:
         """
         Возвращает конфиг транспорта
         Если пользователю уже был присвоен конкретный транспорт - то вернет его
@@ -174,13 +105,13 @@ class AgentCfg(BaseModel):
             cfg_by_inbox = {t.chatwoot.inbox_id: t for t in transports}
             inboxes = [t.chatwoot.inbox_id for t in transports]
             if not transports:
-                await send_dev_telegram_log(f'[pick_transport]\nНет транспорта для {agent_code}:{kind}', 'ERROR')
-                raise LookupError(f'No transports for {agent_code}:{kind}')
+                await send_dev_telegram_log(f'[pick_transport]\nНет транспорта для {self.agent_code}:{kind}', 'ERROR')
+                raise LookupError(f'No transports for {self.agent_code}:{kind}')
 
             q = await session.execute(
                 select(ContactRouting).where(
                     ContactRouting.phone == phone,
-                    ContactRouting.agent_code == agent_code,
+                    ContactRouting.agent_code == self.agent_code,
                     ContactRouting.kind == kind,
                 )
             )
@@ -189,7 +120,7 @@ class AgentCfg(BaseModel):
             if binding and binding.inbox_id in inboxes:
                 return cfg_by_inbox[binding.inbox_id]
 
-            lock_key = f"{agent_code}:{kind}"
+            lock_key = f"{self.agent_code}:{kind}"
             lock_hash = int.from_bytes(hashlib.sha1(lock_key.encode()).digest()[:8], "big", signed=True)
 
             async with session.bind.connect() as conn:
@@ -215,7 +146,7 @@ class AgentCfg(BaseModel):
                     q2 = await conn.execute(
                         select(ContactRouting).where(
                             ContactRouting.phone == phone,
-                            ContactRouting.agent_code == agent_code,
+                            ContactRouting.agent_code == self.agent_code,
                             ContactRouting.kind == kind,
                         )
                     )
@@ -233,7 +164,7 @@ class AgentCfg(BaseModel):
                     if rr is None:
                         await conn.execute(
                             pg_insert(RRCursor.__table__).values(
-                                agent_code=agent_code,
+                                agent_code=self.agent_code,
                                 kind=kind,
                                 last_index=-1,
                                 updated_at=func.now(),
@@ -252,7 +183,7 @@ class AgentCfg(BaseModel):
 
                     stmt = pg_insert(ContactRouting.__table__).values(
                         phone=phone,
-                        agent_code=agent_code,
+                        agent_code=self.agent_code,
                         kind=kind,
                         inbox_id=selected_inbox,
                         updated_at=func.now(),

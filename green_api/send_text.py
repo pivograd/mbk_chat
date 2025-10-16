@@ -3,7 +3,6 @@ import requests
 from typing import Dict, Any, Optional
 
 from classes.config import WAConfig
-from settings import AGENTS_BY_CODE
 from telegram.send_log import send_dev_telegram_log
 from utils.normalize_phone import normalize_phone
 
@@ -16,14 +15,11 @@ def _build_message_payload(client_phone: str, message: str) -> Dict[str, Any]:
     }
 
 
-async def send_text_message(message: str, client_phone: str, agent_name: Optional[str] = None, wa_config: Optional[WAConfig] = None) -> bool:
+async def send_text_message(message: str, client_phone: str, wa_config: Optional[WAConfig] = None) -> bool:
     """
     Отправляет текстовое сообщение клиенту в WhatsApp через Green API.
     """
     try:
-        if agent_name:
-            wa_config = AGENTS_BY_CODE[agent_name].get_wa_cfg()
-
         base_url, instance_id, api_token = wa_config.get_green_api_params()
 
         url = f"{base_url}/waInstance{instance_id}/sendMessage/{api_token}"

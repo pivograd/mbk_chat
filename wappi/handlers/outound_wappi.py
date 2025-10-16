@@ -2,7 +2,7 @@ import traceback
 
 from aiohttp import web
 
-from settings import AGENTS_BY_CODE
+from settings import INBOX_TO_TRANSPORT
 from telegram.send_log import send_dev_telegram_log
 from wappi.wappi_client import WappiClient
 
@@ -13,7 +13,7 @@ async def outbound_wappi(request, agent_code, inbox_id):
     Транспортирует сообщения в TG через WAPPI
     """
     try:
-        tg_config = AGENTS_BY_CODE[agent_code].get_tg_cfg()
+        tg_config = INBOX_TO_TRANSPORT[inbox_id]
         wappi_instance_id, wappi_token = tg_config.get_waapi_params()
         data = await request.json()
         message = data.get("content", "")
