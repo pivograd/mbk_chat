@@ -145,6 +145,9 @@ class SdkAgentsService:
                 )
                 return {"error": "router_error"}
 
+            reply = (result.final_output or "").strip()
+            sleep_seconds = await apply_typing_delay(reply, thinking_seconds)
+
             # идемпотентность
             async with session() as db:
                 async with db.begin():
@@ -152,8 +155,6 @@ class SdkAgentsService:
                     if int(conv.last_message_id or 0) != int(message_id):
                         return {"status": "skip_irrelevant_message"}
 
-            reply = (result.final_output or "").strip()
-            sleep_seconds = await apply_typing_delay(reply, thinking_seconds)
             await send_dev_telegram_log(
                 f"[SdkAgentsService.process]\nСообщение от Агента {self.agent_code}\nID диалога chatwoot: {conv_id}\nThinking seconds: {thinking_seconds:.2f}\nSleep seconds: {sleep_seconds:.2f}\n\nОтвет агента:\n\n{reply}",
                 "AGENTS"
