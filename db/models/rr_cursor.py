@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer, TIMESTAMP, text
 
-from bx24.models.bitrix_user_token import Base
+from db.models.base import Base
 
 
 class RRCursor(Base):

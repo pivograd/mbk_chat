@@ -1,9 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer, Boolean, UniqueConstraint, TIMESTAMP, text
-
-from bx24.models.bitrix_user_token import Base
-
+from db.models.base import Base
 
 class ContactRouting(Base):
     __tablename__ = "contact_routing"

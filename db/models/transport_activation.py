@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from bx24.models.bitrix_user_token import Base
+from db.models.base import Base
 from settings import BOTS_CFG
 from telegram.send_log import send_dev_telegram_log, safe_log
 
