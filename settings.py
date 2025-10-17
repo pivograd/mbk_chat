@@ -111,10 +111,18 @@ BOTS_CFG: list[AgentCfg] = [
         ),
         transports=[
             WAConfig(
-                instance_id=os.getenv('MAKSIM_GREEN_API_INSTANCE_ID'),
-                api_token=os.getenv('MAKSIM_GREEN_API_TOKEN'),
+                instance_id=os.getenv('MAKSIM1_GREEN_API_INSTANCE_ID'),
+                api_token=os.getenv('MAKSIM1_GREEN_API_TOKEN'),
                 chatwoot=ChatwootBinding(
                     inbox_id=3,
+                    assignee_id='14',
+                )
+            ),
+            WAConfig(
+                instance_id=os.getenv('MAKSIM2_GREEN_API_INSTANCE_ID'),
+                api_token=os.getenv('MAKSIM2_GREEN_API_TOKEN'),
+                chatwoot=ChatwootBinding(
+                    inbox_id=15,
                     assignee_id='14',
                 )
             ),
