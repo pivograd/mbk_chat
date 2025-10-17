@@ -2,6 +2,8 @@ import asyncio
 import hashlib
 import os
 from typing import List, Literal, Annotated, Union, Optional
+
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text, insert, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +15,7 @@ from db.models.transport_activation import TransportActivation
 from telegram.send_log import send_dev_telegram_log
 from wappi.wappi_client import WappiClient
 
+load_dotenv()
 
 
 LOCK_TRIES = 25

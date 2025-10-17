@@ -10,6 +10,7 @@ from aiohttp import web
 from chatwoot_api.functions.safe_send_to_chatwoot import safe_send_to_chatwoot
 from db.models.transport_activation import TransportActivation
 from green_api.download_url import greenapi_download_url
+from green_api.functions.get_instance_settings import get_instance_settings, get_instance_phone
 from openai_agents.functions.analyze_image import analyze_image
 from openai_agents.transcribation_client import TranscribeClient, _extract_transcription_text
 from telegram.send_log import send_dev_telegram_log
@@ -33,23 +34,24 @@ async def inbound_green_api(request, agent_code, inbox_id):
         # Cмена статуса инстанса
         if type_webhook == "stateInstanceChanged":
             state_instance = data.get("stateInstance")
+            phone = await get_instance_phone(wa_config)
             if state_instance == 'notAuthorized':
                 session_maker = request.app["db_sessionmaker"]
                 async with session_maker() as session:
                     await TransportActivation.deactivate(session, inbox_id)
-                await send_dev_telegram_log(f"[inbound_green_api]\n\nИнстанс разлогинился!\n@pivograd\n@kateradzivil\n@Im_Artem\n\ninbox_id={inbox_id}\nсостояние инстанса={state_instance} → is_active=False","STATUS", )
+                await send_dev_telegram_log(f"[inbound_green_api]\n\nИнстанс разлогинился!\n@pivograd\n@kateradzivil\n@Im_Artem\n\nномер телефона: {phone}\ninbox_id={inbox_id}\nсостояние инстанса={state_instance} → is_active=False","STATUS", )
                 return web.json_response({"status": "ok"})
             elif state_instance == 'authorized':
                 session_maker = request.app["db_sessionmaker"]
                 async with session_maker() as session:
                     await TransportActivation.activate(session, inbox_id)
-                await send_dev_telegram_log(f"[inbound_green_api]\n\nАвторизовали инстанс!\n@pivograd\n@kateradzivil\n@Im_Artem\ninbox_id={inbox_id}: состояние инстанса={state_instance} → is_active=True","STATUS", )
+                await send_dev_telegram_log(f"[inbound_green_api]\n\nАвторизовали инстанс!\n@pivograd\n@kateradzivil\n@Im_Artem\n\nномер телефона: {phone}\ninbox_id={inbox_id}: состояние инстанса={state_instance} → is_active=True","STATUS", )
                 return web.json_response({"status": "ok"})
             elif state_instance == 'blocked':
                 session_maker = request.app["db_sessionmaker"]
                 async with session_maker() as session:
                     await TransportActivation.deactivate(session, inbox_id)
-                await send_dev_telegram_log(f"[inbound_green_api]\n\nИнстанс заблокирован!\n@pivograd\n@kateradzivil\n@Im_Artem\ninbox_id={inbox_id}: состояние инстанса={state_instance} → is_active=False","STATUS", )
+                await send_dev_telegram_log(f"[inbound_green_api]\n\nИнстанс заблокирован!\n@pivograd\n@kateradzivil\n@Im_Artem\n\nномер телефона: {phone}\ninbox_id={inbox_id}: состояние инстанса={state_instance} → is_active=False","STATUS", )
                 return web.json_response({"status": "ok"})
 
 
