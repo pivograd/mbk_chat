@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from db.models.contact_routing import ContactRouting
 from db.models.rr_cursor import RRCursor
+from db.models.transport_activation import TransportActivation
 from telegram.send_log import send_dev_telegram_log
 from wappi.wappi_client import WappiClient
 
@@ -103,7 +104,10 @@ class AgentCfg(BaseModel):
         try:
             transports = self.transports_of_kind(kind)
             cfg_by_inbox = {t.chatwoot.inbox_id: t for t in transports}
-            inboxes = [t.chatwoot.inbox_id for t in transports]
+            kind_inboxes = [t.chatwoot.inbox_id for t in transports]
+            active_inboxes = await TransportActivation.get_active_inboxes(session)
+            inboxes = list(set(kind_inboxes) & set(active_inboxes))
+
             if not transports:
                 await send_dev_telegram_log(f'[pick_transport]\nНет транспорта для {self.agent_code}:{kind}', 'ERROR')
                 raise LookupError(f'No transports for {self.agent_code}:{kind}')

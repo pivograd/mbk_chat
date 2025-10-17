@@ -1,13 +1,14 @@
 import traceback
 
 import sqlalchemy as sa
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from db.models.base import Base
 from settings import BOTS_CFG
-from telegram.send_log import send_dev_telegram_log, safe_log
+from telegram.send_log import safe_log
 
 
 class TransportActivation(Base):
@@ -16,6 +17,38 @@ class TransportActivation(Base):
     inbox_id = sa.Column(sa.Integer, primary_key=True, unique=True)
     is_active = sa.Column(sa.Boolean, nullable=False, server_default=sa.text("true"))
     updated_at = sa.Column(sa.DateTime(timezone=True),server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    @classmethod
+    async def set_active(cls, session: AsyncSession, inbox_id: int, active: bool) -> None:
+        stmt = pg_insert(cls).values(
+            inbox_id=inbox_id,
+            is_active=active,
+        ).on_conflict_do_update(
+            index_elements=[cls.inbox_id],
+            set_={
+                "is_active": sa.literal(active),
+                "updated_at": func.now(),
+            },
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+    @classmethod
+    async def deactivate(cls, session: AsyncSession, inbox_id: int) -> None:
+        await cls.set_active(session, inbox_id, False)
+
+    @classmethod
+    async def activate(cls, session: AsyncSession, inbox_id: int) -> None:
+        await cls.set_active(session, inbox_id, True)
+
+    @classmethod
+    async def get_active_inboxes(cls, session: AsyncSession) -> list[int]:
+        """
+        """
+        q = await session.execute(
+            select(cls.inbox_id).where(cls.is_active.is_(True))
+        )
+        return [row[0] for row in q.all()]
 
 
 async def bootstrap_transport_activation(session: AsyncSession):

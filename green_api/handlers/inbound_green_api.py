@@ -8,6 +8,7 @@ import aiohttp
 from aiohttp import web
 
 from chatwoot_api.functions.safe_send_to_chatwoot import safe_send_to_chatwoot
+from db.models.transport_activation import TransportActivation
 from green_api.download_url import greenapi_download_url
 from openai_agents.functions.analyze_image import analyze_image
 from openai_agents.transcribation_client import TranscribeClient, _extract_transcription_text
@@ -28,7 +29,19 @@ async def inbound_green_api(request, agent_code, inbox_id):
         wa_config = INBOX_TO_TRANSPORT.get(inbox_id)
         cw_config = wa_config.chatwoot
 
-        if not data.get("typeWebhook") == "incomingMessageReceived":
+        type_webhook = data.get("typeWebhook")
+        # Cмена статуса инстанса
+        if type_webhook == "stateInstanceChanged":
+            state_instance = data.get("stateInstance")
+            if state_instance == 'notAuthorized':
+                session_maker = request.app["db_sessionmaker"]
+                async with session_maker() as session:
+                    await TransportActivation.deactivate(session, inbox_id)
+                await send_dev_telegram_log(f"[inbound_green_api]\n@pivograd\n@kateradzivil\n@Im_Artem\ninbox_id={inbox_id}: состояние инстанса={state_instance} → is_active=false","STATUS", )
+                return web.json_response({"status": "ok"})
+
+
+        elif not type_webhook == "incomingMessageReceived":
             return web.json_response({"status": "ok"})
 
         sender_data = data.get("senderData", {})
