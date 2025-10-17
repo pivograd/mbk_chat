@@ -7,7 +7,6 @@ from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from db.models.base import Base
-from settings import BOTS_CFG
 from telegram.send_log import safe_log
 
 
@@ -58,6 +57,7 @@ async def bootstrap_transport_activation(session: AsyncSession):
     try:
         await safe_log(f'[bootstrap_transport_activation]\nВошли!', 'DEV')
         inbox_ids = set()
+        from settings import BOTS_CFG
         for agent_cfg in BOTS_CFG:
             for transport in agent_cfg.transports:
                 inbox_id = transport.chatwoot.inbox_id
