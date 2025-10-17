@@ -30,7 +30,7 @@ app = web.Application()
 # Website
 app.router.add_post("/webhook/v3/website", handle_form_website_webhook)
 # BX24
-app.router.add_post("/chatwoot/new_contact/v3", handle_message_bitrix_webhook) # TODO поменять url
+app.router.add_post("/bx24/mbkchat/start", handle_message_bitrix_webhook)
 app.router.add_post("/bx24/transport/leads", handle_artcontext_leads)
 app.router.add_post("/bx24/transport/deal/update/comments", handle_deal_update_comments_to_chatwoot)
 app.router.add_post("/bx24/transport/deal/update/transcribation", handle_deal_update_calls_transcribation)
