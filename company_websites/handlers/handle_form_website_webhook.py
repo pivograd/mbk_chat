@@ -23,7 +23,7 @@ async def handle_form_website_webhook(request):
         form_type = match.group(1).strip() if match else 'quiz'
         message = get_message_from_comment(comment, form_type)
         agent_name = data.get("agent_name")
-        await send_dev_telegram_log(f'[handle_form_website_webhook]\nЗапрос с лендоса!\ndata: {data}', 'DEV')
+        await send_dev_telegram_log(f'NEW\n[handle_form_website_webhook]\nЗапрос с лендоса!\n\ndata: {data}', 'DEV')
         if not agent_name:
             await send_dev_telegram_log(f'[handle_form_website_webhook]\nНе указано имя агента!\ndata: {data}', 'WARNING')
             return web.Response(text="❌ Не указано имя агента", status=400)
