@@ -171,8 +171,7 @@ class AgentCfg(BaseModel):
                     if rr is None:
                         await conn.execute(
                             pg_insert(RRCursor.__table__).values(
-                                agent_code=self.agent_code,
-                                kind=kind,
+                                agent_code_and_kind=lock_key,
                                 last_index=-1,
                                 updated_at=func.now(),
                             ).on_conflict_do_nothing()
