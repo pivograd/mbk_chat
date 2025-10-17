@@ -15,13 +15,15 @@ from utils.read_txt_file import read_txt_file
 
 
 def build_new_router_agent(cfg: OpenAIConfig) -> Agent:
-    general_agent = build_general_agent(cfg.main_prompt_file)
-    design_agent = build_design_agent(cfg.design_cost)
-    manager_agent = build_manager_agent()
+    general_agent = build_general_agent(cfg.main_prompt_file, cfg.price_complectation, cfg.catalogs_file)
+    design_agent = build_design_agent(cfg.design_cost, cfg.price_complectation)
+    manager_agent = build_manager_agent(cfg.price_complectation)
     warmup_agent = build_warmup_agent()
-    mortgage_agent = build_mortgage_agent()
-    products_agent = build_products_agent(cfg.catalogs_file, cfg.vector_store_id)
-    router_prompt = read_txt_file(ROUTER_PROMPT_PATH)
+    mortgage_agent = build_mortgage_agent(cfg.price_complectation)
+    products_agent = build_products_agent(cfg.catalogs_file, cfg.vector_store_id, cfg.price_complectation)
+
+    router_prompt = read_txt_file(ROUTER_PROMPT_PATH).replace('<<PRICE_COMPLECTATION>>', cfg.price_complectation)
+
     return Agent(
         name=f"Router Agent",
         model=MODEL_MINI,

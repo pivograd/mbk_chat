@@ -70,6 +70,7 @@ class OpenAIConfig(BaseModel):
     main_prompt_file: str
     catalogs_file: str
     design_cost: str
+    price_complectation: str
 
 Transport = Annotated[Union[WAConfig, TGConfig], Field(discriminator="kind")]
 

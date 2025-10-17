@@ -83,6 +83,7 @@ TRANSCRIBE_MODEL = "gpt-4o-transcribe"
 
 SERVER_PROMPT_PATH = '/opt/mbk/mbk_chat/openai_agents/prompts'
 STYLE_BLOCK_PATH = f"{SERVER_PROMPT_PATH}/reusable/style.txt"
+COMPANY_INFO_BLOCK_PATH = f"{SERVER_PROMPT_PATH}/reusable/company_info.txt"
 DESIGN_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/design_agent.txt"
 MANAGER_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/manager_agent.txt"
 MORTGAGE_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/mortgage_agent.txt"
@@ -107,7 +108,8 @@ BOTS_CFG: list[AgentCfg] = [
             vector_store_id="vs_6891ca7fab5481919070e9974947b2f8",
             main_prompt_file=f"{SERVER_PROMPT_PATH}/agents_instructions/main_maksim.txt",
             catalogs_file=f"{SERVER_PROMPT_PATH}/agents_instructions/catalogs/maksim_catalogs.txt",
-            design_cost="45 000"
+            design_cost="45 000",
+            price_complectation="Базовая комплектация"
         ),
         transports=[
             WAConfig(
@@ -143,7 +145,8 @@ BOTS_CFG: list[AgentCfg] = [
             vector_store_id="vs_68dbcc7b5a348191803d1a2de2e7b0b8",
             main_prompt_file=f"{SERVER_PROMPT_PATH}/agents_instructions/main_pavel.txt",
             catalogs_file=f"{SERVER_PROMPT_PATH}/agents_instructions/catalogs/pavel_catalogs.txt",
-            design_cost="50 000"
+            design_cost="50 000",
+            price_complectation="Теплый контур"
         ),
         transports=[
             WAConfig(
@@ -171,7 +174,8 @@ BOTS_CFG: list[AgentCfg] = [
             vector_store_id="vs_68dbcc7b5a348191803d1a2de2e7b0b8",
             main_prompt_file=f"{SERVER_PROMPT_PATH}/agents_instructions/main_pavel.txt",
             catalogs_file=f"{SERVER_PROMPT_PATH}/agents_instructions/catalogs/pavel_catalogs.txt",
-            design_cost="50 000"
+            design_cost="50 000",
+            price_complectation="Теплый контур"
         ),
         transports=[
             TGConfig(
