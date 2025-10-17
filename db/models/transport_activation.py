@@ -55,7 +55,6 @@ async def bootstrap_transport_activation(session: AsyncSession):
     Создаёт в таблице TransportActivation
     """
     try:
-        await safe_log(f'[bootstrap_transport_activation]\nВошли!', 'DEV')
         inbox_ids = set()
         from settings import BOTS_CFG
         for agent_cfg in BOTS_CFG:
@@ -65,9 +64,8 @@ async def bootstrap_transport_activation(session: AsyncSession):
                     inbox_ids.add(inbox_id)
                 except (TypeError, ValueError):
                     continue
-        await safe_log(f'[bootstrap_transport_activation]\nВошли!3', 'DEV')
         if not inbox_ids:
-            await safe_log(f'[bootstrap_transport_activation]\nПУстойreturn0!\nРот его возвращал.','DEV')
+            await safe_log(f'[bootstrap_transport_activation]\nНет inbox_ids для выбора транспора!','WARNING')
             return
 
         # TODO здесь можно проверять активность инстансов, пока считаем, что при запуске все активные.
@@ -84,5 +82,5 @@ async def bootstrap_transport_activation(session: AsyncSession):
         await safe_log(f'[bootstrap_transport_activation]\nАктивные транспорты сконфигурированы в БД!', 'DEV')
     except Exception as e:
         tb = traceback.format_exc()
-        await safe_log(f'[bootstrap_transport_activation]\nКритическая ошибка!\nError: {tb}', 'DEV')
+        await safe_log(f'[bootstrap_transport_activation]\nКритическая ошибка!\nError: {tb}', 'ERROR')
         raise
