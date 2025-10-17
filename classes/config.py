@@ -106,15 +106,18 @@ class AgentCfg(BaseModel):
         """
         try:
             transports = self.transports_of_kind(kind)
+            if not transports:
+                await send_dev_telegram_log(f'[pick_transport]\nНет транспорта для {self.agent_code}:{kind}', 'ERROR')
+                raise LookupError(f'No transports for {self.agent_code}:{kind}')
             cfg_by_inbox = {t.chatwoot.inbox_id: t for t in transports}
             kind_inboxes = [t.chatwoot.inbox_id for t in transports]
             active_inboxes = await TransportActivation.get_active_inboxes(session)
             inboxes = list(set(kind_inboxes) & set(active_inboxes))
-
-            if not transports:
-                await send_dev_telegram_log(f'[pick_transport]\nНет транспорта для {self.agent_code}:{kind}', 'ERROR')
-                raise LookupError(f'No transports for {self.agent_code}:{kind}')
-
+            if not inboxes:
+                await send_dev_telegram_log(
+                    f'[pick_transport]\nНет активных инбоксов для {self.agent_code}:{kind}', 'ERROR'
+                )
+                raise LookupError('No active inboxes')
             q = await session.execute(
                 select(ContactRouting).where(
                     ContactRouting.phone == phone,
@@ -162,13 +165,12 @@ class AgentCfg(BaseModel):
                         return cfg_by_inbox[binding_locked.inbox_id]
 
                     qcur = await conn.execute(
-                        select(RRCursor).where(
-                            RRCursor.agent_code_and_kind == lock_key
-                        )
+                        select(RRCursor.id, RRCursor.last_index)
+                        .where(RRCursor.agent_code_and_kind == lock_key)
                     )
-                    rr = qcur.scalar_one_or_none()
+                    row = qcur.one_or_none()
 
-                    if rr is None:
+                    if row is None:
                         await conn.execute(
                             pg_insert(RRCursor.__table__).values(
                                 agent_code_and_kind=lock_key,
@@ -178,10 +180,12 @@ class AgentCfg(BaseModel):
                         )
                         next_index = 0
                     else:
-                        next_index = (rr.last_index + 1) % len(inboxes)
+                        rr_id = row.id
+                        last_index = row.last_index
+                        next_index = (last_index + 1) % len(inboxes)
                         await conn.execute(
                             update(RRCursor)
-                            .where(RRCursor.id == rr.id)
+                            .where(RRCursor.id == rr_id)
                             .values(last_index=next_index, updated_at=func.now())
                         )
 
@@ -208,4 +212,4 @@ class AgentCfg(BaseModel):
 
                     return cfg_by_inbox[selected_inbox]
         except Exception as e:
-            await send_dev_telegram_log(f'[pick_transport]\nКритическая ошибка!!\nERROR: {e}')
+            await send_dev_telegram_log(f'[pick_transport]\nКритическая ошибка!!\nERROR: {e}', 'ERROR')
