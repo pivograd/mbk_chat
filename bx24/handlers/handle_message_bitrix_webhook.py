@@ -22,7 +22,7 @@ async def handle_message_bitrix_webhook(request):
             key, value = item.split("=", 1)
             params[key.strip()] = value.strip()
 
-        await send_dev_telegram_log(f'[handle_message_bitrix_webhook]\nparams: {params}')
+        await send_dev_telegram_log(f'[handle_message_bitrix_webhook]\nЗапрос с Битрикс24\nparams: {params}', 'DEV')
 
         # Инициализируем переменные
         name = params.get('name', 'Без имени')
@@ -50,5 +50,5 @@ async def handle_message_bitrix_webhook(request):
         return web.Response(text="✅ Контакт обработан")
 
     except Exception as e:
-        # TODO log
+        await send_dev_telegram_log(f'[handle_message_bitrix_webhook]\nКритическая ошибка при обработке запроса с Битрикса\n\nERROR: {e}', 'ERROR')
         return web.Response(text="❌ Ошибка обработки", status=500)
