@@ -28,7 +28,7 @@ def visible_char_count(text: str) -> int:
 async def apply_typing_delay(
     reply: str,
     thinking_seconds: float,
-    rate_chars_per_min: float = 200.0,
+    rate_chars_per_min: float = 350.0,
     hard_cap_seconds: float = 180.0
 ) -> float:
     """
