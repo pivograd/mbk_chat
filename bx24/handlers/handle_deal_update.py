@@ -24,8 +24,6 @@ async def handle_deal_update(request):
 
         deal_id = deal_id[0]
         domain = domain[0]
-        if deal_id != '166700':
-            return
 
         session_maker = request.app["db_sessionmaker"]
         event_code = f"{domain}:DEAL:{deal_id}"
