@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Any
 
-from openai_agents.transcribation_client import _extract_transcription_text
 from utils.calculate_duration import calculate_duration
 from utils.parse_dt_iso import parse_dt_iso
 
@@ -18,6 +17,42 @@ class CallInfo:
     status: str
     file_id: Optional[str]
 
+
+def _extract_transcription_text(val: Any) -> str | None:
+    """
+    """
+    if val is None:
+        return None
+    try:
+        text_attr = getattr(val, "text", None)
+        if isinstance(text_attr, str) and text_attr.strip():
+            return text_attr.strip()
+    except Exception:
+        pass
+
+    if isinstance(val, dict):
+        t = val.get("text")
+        if isinstance(t, str) and t.strip():
+            return t.strip()
+
+    if isinstance(val, str):
+        s = val.strip()
+        if not s:
+            return None
+        # Поищем кусок text='...'
+        import re
+        m = re.search(r"text\s*=\s*'([^']+)'", s) or re.search(r'text\s*=\s*"([^"]+)"', s)
+        if m:
+            return m.group(1).strip()
+        return s
+
+    d = getattr(val, "__dict__", None)
+    if isinstance(d, dict):
+        t = d.get("text")
+        if isinstance(t, str) and t.strip():
+            return t.strip()
+
+    return None
 
 def pick_first_file(call: dict[str, Any]) -> Optional[dict[str, Any]]:
     """

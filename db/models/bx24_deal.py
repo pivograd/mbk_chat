@@ -4,6 +4,7 @@ import traceback
 from typing import Optional, Dict, Any, ClassVar
 from datetime import datetime, timezone, timedelta
 
+from aiohttp import web
 from sqlalchemy import Integer, String, DateTime, UniqueConstraint, select, or_, and_, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -14,8 +15,8 @@ from chatwoot_api.chatwoot_client import ChatwootClient
 from db.models.base import Base
 
 from bx24.bx_utils.bitrix_token import BitrixToken
-from openai_agents.transcribation_client import TranscribeClient
-from settings import but_map_dict, FV_MBK_DIALOG_BOOL_FIELD, PORTAL_AGENTS
+from db.models.bx_deal_cw_link import link_deal_with_conversation, get_conversation_ids_for_deal, BxDealCwLink
+from settings import but_map_dict, PORTAL_AGENTS
 from telegram.send_log import send_dev_telegram_log
 from utils.normalize_phone import normalize_phone
 
@@ -30,9 +31,6 @@ class Bx24Deal(Base):
     bx_portal: Mapped[str] = mapped_column(String(255), nullable=False)
     bx_funnel_id: Mapped[str] = mapped_column(String(55), nullable=False)
     bx_contact_id: Mapped[int] = mapped_column(Integer, nullable=True)
-
-    chatwoot_contact_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    chatwoot_conversation_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     last_sync_chatwoot: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
     last_transcribed_call: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True,default=None)
@@ -158,11 +156,9 @@ class Bx24Deal(Base):
                     await send_dev_telegram_log(f"[handle_new_call]\nФайл пустой, call_id={info.id}")
                     return result
 
-                # await send_dev_telegram_log(f"[handle_new_call]\nОтправка на транскрибацию ({size} байт)")
-
+                from openai_agents.transcribation_client import TranscribeClient
                 transcribation = await TranscribeClient().transcribe(tmp_path)
 
-                # await send_dev_telegram_log(f"[handle_new_call]\nПолучена транскрибация: {transcribation}")
                 result['transcribation'] = transcribation.text
                 return result
 
@@ -183,83 +179,71 @@ class Bx24Deal(Base):
             await send_dev_telegram_log(f"[handle_new_call]\nОшибка при обработке звонка: {str(e)}\nCALL: {call}")
             return {'error': str(e)}
 
-    async def init_chatwoot(self, session: AsyncSession) -> tuple[bool, Optional[int], Optional[int]]:
+    async def init_chatwoot(self, session: AsyncSession) -> tuple[bool, list[Optional[int]], Optional[int]]:
         """
-        Инициализация связки с Chatwoot. Работает с ПРИКРЕПЛЁННОЙ копией объекта.
+        Инициализация связки с Chatwoot.
         """
-        persistent: Bx24Deal = await session.merge(self, load=True)
+        false_response = (False, [], None)
+        try:
+            persistent: Bx24Deal = await session.merge(self, load=True)
 
-        # получаем ID агента chatwoot связанного с воронкой сделок
-        inbox_id = PORTAL_AGENTS.get(persistent.bx_portal, {}).get(persistent.bx_funnel_id)
+            if not persistent.bx_contact_id:
+                await send_dev_telegram_log(f'[init_chatwoot]\nУ сделки нет контакта!\nbx portal: {persistent.bx_portal}'
+                                            f'\nbx deal id: {persistent.bx_id}', "WARNING")
+                return false_response
 
-        if not inbox_id:
-            return False, None, None
-
-        if not persistent.bx_contact_id:
-            return False, None, None
-
-        bx_contact = persistent.but.call_api_method('crm.contact.get', {'id': persistent.bx_contact_id}).get('result')
-        phone = bx_contact.get('PHONE')
-        if not phone:
-            return False, None, None
-
-        phone = normalize_phone(phone[0].get('VALUE'))
-        if not phone:
-            await send_dev_telegram_log(
-                f"[Bx24Deal:init_chatwoot] Невалидный номер у контакта {persistent.bx_contact_id}: {phone}\n"
-                f"ID сделки: {persistent.bx_id}\nПортал: {persistent.bx_portal}"
-            )
-            return False, None, None
-
-        identifier = phone.lstrip("+")
-        name = bx_contact.get('NAME') or f'Контакт из BX24 {persistent.bx_portal}'
-        async with ChatwootClient() as cw:
-            chatwoot_contact_id = await cw.get_contact_id(identifier=identifier)
-            if not chatwoot_contact_id:
-                # await send_dev_telegram_log(f'[init_chatwoot]\nНе найден контакт с identifier: {identifier}')
-                return False, None, None
-            conversation_id = await cw.get_conversation_id(contact_id=chatwoot_contact_id, inbox_id=inbox_id)
-            if not conversation_id:
-                if persistent.chatwoot_contact_id != chatwoot_contact_id:
-                    persistent.chatwoot_contact_id = chatwoot_contact_id
-                    await session.flush()
-                return False, None, None
-
-            is_active_conv = await cw.is_active_conversation(conversation_id)
-            if not is_active_conv:
-                if persistent.chatwoot_contact_id != chatwoot_contact_id:
-                    persistent.chatwoot_contact_id = chatwoot_contact_id
-                    await session.flush()
-                return False, None, chatwoot_contact_id
-
-            await cw.set_bx24_deal_link(conversation_id, f'https://{self.bx_portal}/crm/deal/details/{self.bx_id}/')
-
-            # Техническое поле-флаг в BX24
-            bx_deal = persistent.but.call_api_method('crm.deal.get', {'id': persistent.bx_id}).get('result')
-            if bx_deal.get(FV_MBK_DIALOG_BOOL_FIELD) != '1':
-                persistent.but.call_api_method(
-                    'crm.deal.update',
-                    {'id': persistent.bx_id, 'fields': {FV_MBK_DIALOG_BOOL_FIELD: '1'}}
+            bx_contact = persistent.but.call_api_method('crm.contact.get', {'id': persistent.bx_contact_id}).get('result')
+            phone = bx_contact.get('PHONE', [{}])
+            phone = normalize_phone(phone[0].get('VALUE'))
+            if not phone:
+                await send_dev_telegram_log(
+                    f"[init_chatwoot]\nНевалидный номер у контакта!\nbx contact id: {persistent.bx_contact_id}\nphone: {phone}\n"
+                    f"ID сделки: {persistent.bx_id}\nПортал: {persistent.bx_portal}", "WARNING"
                 )
-            # Костыльно проверяем и меняем воронку сделки:
-            if bx_deal.get('CATEGORY_ID') != persistent.bx_funnel_id:
-                persistent.bx_funnel_id = bx_deal.get('CATEGORY_ID')
-                await session.flush()
-                await send_dev_telegram_log('[init_chatwoot]\nОбновилась воронка у сделки!')
+                return false_response
 
-        if (persistent.chatwoot_conversation_id == conversation_id and
-                persistent.chatwoot_contact_id == chatwoot_contact_id):
-            return True, conversation_id, chatwoot_contact_id
+            agent_code = PORTAL_AGENTS.get(persistent.bx_portal, {}).get(persistent.bx_funnel_id)
+            if not agent_code:
+                await send_dev_telegram_log(f'[init_chatwoot]\nНе удалось получить агента!\nbx portal: {persistent.bx_portal}'
+                                            f'\nbx funnel id: {persistent.bx_funnel_id}\nbx deal id: {persistent.bx_id}', "WARNING")
+                return false_response
 
-        persistent.chatwoot_conversation_id = conversation_id
-        persistent.chatwoot_contact_id = chatwoot_contact_id
-        await session.flush()
+            identifier = phone.lstrip("+")
+            conversation_ids = []
+            async with ChatwootClient() as cw:
+                chatwoot_contact_id = await cw.get_contact_id(identifier=identifier)
+                if not chatwoot_contact_id:
+                    await send_dev_telegram_log(f'[init_chatwoot]\nНе найден контакт в CW с identifier: {identifier}', "INFO")
+                    return false_response
 
-        await send_dev_telegram_log(f'Связан диалог CW со сделкой в BX24\n\n'
-                                    f'ID диалога CW: {conversation_id}\nID контакта CW: {chatwoot_contact_id}\n'
-                                    f'Портал BX24: {self.bx_portal}\nID сделки BX24: {self.bx_id}\n')
+                inboxes_id = await cw.get_conversation_inboxes(chatwoot_contact_id)
 
-        return True, conversation_id, chatwoot_contact_id
+                for inbox_id in inboxes_id:
+                    conv_id = await cw.get_conversation_id(contact_id=chatwoot_contact_id, inbox_id=inbox_id)
+                    if not conv_id:
+                        await send_dev_telegram_log(f'[init_chatwoot]\nНе нашли диалог в CW для:\ncw_contact_id: {chatwoot_contact_id}\ninbox_id: {inbox_id}', "DEV")
+                        continue
+                    if not await cw.is_active_conversation(conv_id):
+                        continue
+                    await cw.set_bx24_deal_link(conv_id,f'https://{self.bx_portal}/crm/deal/details/{self.bx_id}/')
+                    await link_deal_with_conversation(
+                        session=session,
+                        bx_portal=persistent.bx_portal,
+                        bx_deal_id=persistent.bx_id,
+                        cw_conversation_id=conv_id,
+                        cw_inbox_id=inbox_id,
+                        cw_contact_id=chatwoot_contact_id,
+                    )
+                    conversation_ids.append(conv_id)
+                    await send_dev_telegram_log(f'Связан диалог CW со сделкой в BX24\n\n'
+                                                f'ID диалога CW: {conv_id}\nID контакта CW: {chatwoot_contact_id}\n'
+                                                f'Портал BX24: {self.bx_portal}\nID сделки BX24: {self.bx_id}\n', 'INFO')
+
+            return True, conversation_ids, chatwoot_contact_id
+
+        except Exception as e:
+            await send_dev_telegram_log(f'[init_chatwoot]\nКритическая ошибка!\nerror: {e}')
+            return false_response
 
     @staticmethod
     async def get_or_create(session: AsyncSession, deal_id, domain):
@@ -289,23 +273,6 @@ class Bx24Deal(Base):
                 pass
 
         return await session.scalar(stmt)
-
-    @classmethod
-    async def get_chatwoot_conversation_id(cls, session: AsyncSession, deal_id: int, portal: str,) -> Optional[int]:
-        """
-        Вернёт ID диалога Chatwoot связанного со сделкой.
-        Если сделки нет или ID отсутствует, вернёт None.
-        """
-        stmt = (
-            select(cls.chatwoot_conversation_id)
-            .where(
-                cls.bx_id == int(deal_id),
-                cls.bx_portal == portal,
-            )
-            .limit(1)
-        )
-        result = await session.execute(stmt)
-        return result.scalar_one_or_none()
 
     async def save_max_last_transcribed_call(self, session: AsyncSession, latest_call_dt: datetime) -> None:
         """
@@ -346,12 +313,13 @@ class Bx24Deal(Base):
                 .values(last_sync_comment_id=max_comment_id)
             )
         except Exception as e:
-            await send_dev_telegram_log(f'[save_max_last_transcribed_call]\nОшибка при сохранении id посленднего синхронизированного коммента: {e}')
+            await send_dev_telegram_log(f'[save_max_last_sync_comment_id]\nОшибка при сохранении id посленднего синхронизированного коммента: {e}', 'ERROR')
             raise e
 
     async def sync_deal_stage_to_chatwoot(self, session: AsyncSession) -> bool:
         """
         Отслеживает изменения стадии сделки в BX24
+        Сохраняет актуальную стадию в БД, и транслирует информацию в приватные комментарии диалога Chatwoot
         """
         try:
             persistent: Bx24Deal = await session.merge(self, load=True)
@@ -359,16 +327,16 @@ class Bx24Deal(Base):
             bx_deal = persistent.but.call_api_method('crm.deal.get', {'id': persistent.bx_id}).get('result')
             if not bx_deal:
                 await send_dev_telegram_log(
-                    f"[sync_deal_stage_to_chatwoot] Не удалось получить сделку.\n"
-                    f"Портал: {persistent.bx_portal}\nСделка: {persistent.bx_id}"
+                    f"[sync_deal_stage_to_chatwoot]\nНе удалось получить сделку.\n"
+                    f"Портал: {persistent.bx_portal}\nСделка: {persistent.bx_id}", 'WARNING'
                 )
                 return False
 
             new_stage_id: Optional[str] = bx_deal.get('STAGE_ID')
             if not new_stage_id:
                 await send_dev_telegram_log(
-                    f"[sync_deal_stage_to_chatwoot] Не удалось получить STAGE_ID. "
-                    f"Портал: {persistent.bx_portal}, Сделка: {persistent.bx_id}"
+                    f"[sync_deal_stage_to_chatwoot]\nНе удалось получить STAGE_ID.\n"
+                    f"Портал: {persistent.bx_portal}\nСделка: {persistent.bx_id}\nbx_deal: {bx_deal}", "WARNING"
                 )
                 return False
 
@@ -379,12 +347,12 @@ class Bx24Deal(Base):
 
             persistent.stage_id = new_stage_id
 
-            # если нет связки
-            if not persistent.chatwoot_conversation_id:
-                await send_dev_telegram_log('[sync_deal_stage_to_chatwoot]\nПопытка синхронизации стадии сделки без связи с CW')
-                return True
+            conversation_ids = await get_conversation_ids_for_deal(session, bx_portal=persistent.bx_portal, bx_id=persistent.bx_id)
 
-            # если это первичная инициализация — не шлём заметку, просто фиксируем
+            if not conversation_ids:
+                await send_dev_telegram_log('[sync_deal_stage_to_chatwoot]\nПопытка синхронизации сделки без связи с CW\nСюда такое не должно попадать!!', 'ERROR')
+                return False
+
             if old_stage_id is None:
                 await session.flush()
                 return True
@@ -406,13 +374,13 @@ class Bx24Deal(Base):
 
             try:
                 async with ChatwootClient() as cw:
-                    await cw.send_message(persistent.chatwoot_conversation_id, msg, private=True)
-                persistent.last_sync_chatwoot = datetime.now(timezone.utc)
+                    for conversation_id in conversation_ids:
+                        await cw.send_message(conversation_id, msg, private=True)
                 return True
             except Exception as e:
                 await send_dev_telegram_log(
-                    f"[sync_deal_stage_to_chatwoot] Ошибка отправки заметки в Chatwoot: {e}\n"
-                    f"Портал: {persistent.bx_portal}, Сделка: {persistent.bx_id}"
+                    f"[sync_deal_stage_to_chatwoot]\nОшибка отправки заметки в Chatwoot: {e}\n"
+                    f"Портал: {persistent.bx_portal}\nСделка: {persistent.bx_id}", 'ERROR'
                 )
                 return False
             finally:
@@ -421,8 +389,8 @@ class Bx24Deal(Base):
 
         except Exception as e:
             await send_dev_telegram_log(
-                f"[sync_deal_stage_to_chatwoot] Широкая ошибка при смене стадии: {e}\n"
-                f"Портал: {self.bx_portal}, Сделка: {self.bx_id}"
+                f"[sync_deal_stage_to_chatwoot]\nКритическая ошибка при смене стадии: {e}\n"
+                f"Портал: {self.bx_portal}\nСделка: {self.bx_id}", 'ERROR'
             )
             return False
 
@@ -435,13 +403,27 @@ class Bx24Deal(Base):
         cls._ensure_sessionmaker()
         try:
             async with cls._session_maker() as session:
-                # Получаем связанные с диалогом сделки
-                stmt = select(cls).where(cls.chatwoot_conversation_id == conversation_id)
+                stmt = (
+                    select(cls)
+                    .join(
+                        BxDealCwLink,
+                        and_(
+                            BxDealCwLink.bx_portal == cls.bx_portal,
+                            BxDealCwLink.bx_deal_id == cls.bx_id,
+                        ),
+                    )
+                    .where(BxDealCwLink.cw_conversation_id == int(conversation_id))
+                )
                 result = await session.execute(stmt)
-                deals = result.scalars().all()
+                deals: list[Bx24Deal] = result.unique().scalars().all()
 
                 if not deals:
-                    await send_dev_telegram_log(f"[notify_responsible_by_conversation]\nСделка не найдена для conversation_id={conversation_id}\nнекуда отправить уведомление!", 'MANAGERS')
+                    await send_dev_telegram_log(
+                        f"[notify_responsible_by_conversation]\n"
+                        f"Сделка не найдена для conversation_id={conversation_id}\n"
+                        f"некуда отправить уведомление!",
+                        "MANAGERS",
+                    )
                     return False
 
                 for deal in deals:
@@ -477,3 +459,39 @@ class Bx24Deal(Base):
             tb = traceback.format_exc()
             await send_dev_telegram_log(f'[notify_responsible_by_conversation]\nconversation_id: {conversation_id}\nОшибка при отправке уведомления в Битркис: {tb}', 'ERROR')
             return False
+
+
+    async def sync_deal_timeline_comments_to_chatwoot(self, session: AsyncSession):
+        """
+        Cинхронизирует комменты из таймлайна сделки с приватными комментариями чата в chatwoot
+        """
+        comments = await self.get_timeline_comments()
+        comments.sort(key=lambda c: int(c["ID"]))
+
+        last_id = self.last_sync_comment_id or 0
+        new_comments = [c for c in comments if int(c["ID"]) > last_id]
+        if not new_comments:
+            return web.Response(text="OK", status=200)
+
+        conversation_ids = await get_conversation_ids_for_deal(session, bx_portal=self.bx_portal, bx_id=self.bx_id)
+        if not conversation_ids:
+            await send_dev_telegram_log(
+                '[sync_deal_timeline_comments_to_chatwoot]\nПопытка синхронизации сделки без связи с CW\nСюда такое не должно попадать!!',
+                'ERROR')
+            return False
+
+        async with ChatwootClient() as cw:
+            for c in new_comments:
+                comment_text = c.get('COMMENT')
+                for conversation_id in conversation_ids:
+                    await cw.send_message(
+                        conversation_id,
+                        f'Комментарий из сделки BX24:\n {comment_text}',
+                        private=True
+                    )
+
+        max_id = int(new_comments[-1]["ID"])
+
+        await self.save_max_last_sync_comment_id(session, max_id)
+
+        return True

@@ -131,6 +131,17 @@ class ChatwootClient:
         resp = await self._request("GET", url, log=f"Диалоги contact_id={contact_id}")
         return resp.get("payload", []) or []
 
+    async def get_conversation_inboxes(self, contact_id: int) -> list[int]:
+        """
+        Ищет в chatwoot диалоги с этим контактом, возвращает список id источников CW
+        """
+        conversations = await self.get_conversations(contact_id)
+        inboxes = []
+        for conversation in conversations:
+            inboxes.append(conversation.get("inbox_id"))
+        return inboxes
+
+
     async def get_conversation_id(self, contact_id: int, inbox_id: int, source_id: Optional[str] = None) -> Optional[int]:
         """
         Ищет диалог с контактом в нужном источнике и с нужным id (при наличии source_id)

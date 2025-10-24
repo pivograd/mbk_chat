@@ -7,17 +7,18 @@ from pathlib import Path
 import aiohttp
 from aiohttp import web
 
+from bx24.bx_utils.parse_call_info import _extract_transcription_text
 from chatwoot_api.functions.safe_send_to_chatwoot import safe_send_to_chatwoot
 from db.models.transport_activation import TransportActivation
 from green_api.download_url import greenapi_download_url
-from green_api.functions.get_instance_settings import get_instance_settings, get_instance_phone
+from green_api.functions.get_instance_settings import get_instance_phone
 from openai_agents.functions.analyze_image import analyze_image
-from openai_agents.transcribation_client import TranscribeClient, _extract_transcription_text
+from openai_agents.transcribation_client import TranscribeClient
 from telegram.send_log import send_dev_telegram_log
 from utils.download_to_temp_file import download_to_temp
 from utils.ffmpeg_convert_to_wav import convert_to_wav_via_imageio_ffmpeg
 from utils.normalize_phone import normalize_phone
-from settings import AGENTS_BY_CODE, INBOX_TO_TRANSPORT
+from settings import INBOX_TO_TRANSPORT
 
 
 async def inbound_green_api(request, agent_code, inbox_id):
