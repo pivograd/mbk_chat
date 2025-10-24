@@ -6,6 +6,7 @@ import aiohttp
 from aiohttp import web
 
 from chatwoot_api.chatwoot_client import ChatwootClient
+from openai_agents.functions.analyze_document import analyze_document
 from settings import INBOX_TO_TRANSPORT
 from openai_agents.functions.analyze_image import analyze_image
 from bx24.bx_utils.parse_call_info import _extract_transcription_text
@@ -56,6 +57,13 @@ async def inbound_wappi(request, agent_code, inbox_id):
                 if audio_text and audio_text.strip():
                     header = "🎤 Голосовое сообщение"
                     message_text = f"{header}:\nСсылка на файл c аудио: {download_url}\n\n[Транскрибация]:\n{audio_text.strip()}"
+        elif message_data.get('type') == 'document':
+            download_url = message_data.get('file_link')
+            document_summary = await analyze_document(download_url)
+            document_msg = f'[Summary прикрепленного документа]:\n\n{document_summary}'
+            caption = message_data.get("caption")
+            message_text = f'[СООБЩЕНИЕ С ДОКУМЕНТОМ]\n\nТекст сообщения:\n{caption}\nСсылка на документ: {download_url}\n\n{document_msg}'
+
 
         tg_config = INBOX_TO_TRANSPORT[inbox_id]
         wappi_instance_id, wappi_token = tg_config.get_waapi_params()

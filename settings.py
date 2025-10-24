@@ -6,7 +6,7 @@ from bx24.bx_utils.bitrix_token import BitrixToken
 from classes.config import AgentCfg, OpenAIConfig, WAConfig, ChatwootBinding, TGConfig
 
 load_dotenv()
-
+CLIENT_MAX_SIZE = 1024**2 * 30 # 30 МБ
 AI_PROXY = 'http://150.241.122.84:3333/v1/'
 # Bitrix24
 PORTAL_AGENTS = {

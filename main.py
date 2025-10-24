@@ -21,10 +21,10 @@ from bx24.handlers.handle_message_bitrix_webhook import handle_message_bitrix_we
 from company_websites.handlers.handle_form_website_webhook import handle_form_website_webhook
 from db.core import init_db, close_db, setup_workers, _cleanup_workers
 from db.migrate import alembic_upgrade_head
-from settings import BOTS_CFG
+from settings import BOTS_CFG, CLIENT_MAX_SIZE
 from openai_agents.handlers.handle_sdk_agent_webhook import handle_sdk_agent_webhook
 
-app = web.Application()
+app = web.Application(client_max_size=CLIENT_MAX_SIZE)
 BASE_DIR = pathlib.Path(__file__).parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 

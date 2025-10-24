@@ -12,6 +12,7 @@ from chatwoot_api.functions.safe_send_to_chatwoot import safe_send_to_chatwoot
 from db.models.transport_activation import TransportActivation
 from green_api.download_url import greenapi_download_url
 from green_api.functions.get_instance_settings import get_instance_phone
+from openai_agents.functions.analyze_document import analyze_document
 from openai_agents.functions.analyze_image import analyze_image
 from openai_agents.transcribation_client import TranscribeClient
 from telegram.send_log import send_dev_telegram_log
@@ -94,7 +95,7 @@ async def inbound_green_api(request, agent_code, inbox_id):
                 await safe_send_to_chatwoot(phone, name, full_message, cw_config, message_type=0)
 
         # 4a. Картинки/видео/документы
-        elif message_type in ["documentMessage", "videoMessage"]:
+        elif message_type in ["videoMessage"]:
             file_data = message_data.get("fileMessageData", {})
             message_id = data.get("idMessage")
             async with aiohttp.ClientSession() as session:
@@ -119,7 +120,6 @@ async def inbound_green_api(request, agent_code, inbox_id):
             caption = message_data.get("fileMessageData", {}).get("caption")
             full_message = f'[СООБЩЕНИЕ С ИЗОБРАЖЕНИЕМ]\n\nТекст сообщения:\n{caption}\nСсылка на изображение: {download_url}\n\n{image_msg}'
             await safe_send_to_chatwoot(phone, name, full_message, cw_config, message_type=0)
-            await send_dev_telegram_log(f'[DEV LOG]\ndata: {data}\n', 'DEV')
             return web.json_response({"status": "ok"})
 
         # 4c. Аудиосообщение
@@ -161,6 +161,21 @@ async def inbound_green_api(request, agent_code, inbox_id):
                     if wav_path and os.path.exists(wav_path):
                         with contextlib.suppress(Exception):
                             os.remove(wav_path)
+
+        # 4d. Сообщение с документом
+        elif message_type == "documentMessage":
+            message_id = data.get("idMessage")
+            async with aiohttp.ClientSession() as session:
+                res = await greenapi_download_url(session, wa_config, chat_id, message_id)
+                if not res:
+                    return web.json_response({"status": "ok"})
+                download_url, file_name = res
+            document_summary = await analyze_document(download_url)
+            document_msg = f'[Summary прикрепленного документа]:\n\n{document_summary}'
+            caption = message_data.get("caption")
+            full_message = f'[СООБЩЕНИЕ С ДОКУМЕНТОМ]\n\nТекст сообщения:\n{caption}\nСсылка на документ: {download_url}\n\n{document_msg}'
+            await safe_send_to_chatwoot(phone, name, full_message, cw_config, message_type=0)
+            return web.json_response({"status": "ok"})
 
         # 5. Контакт
         elif message_type == "contactMessage":
