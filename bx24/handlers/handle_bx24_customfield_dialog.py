@@ -21,6 +21,7 @@ async def handle_bx24_customfield_dialog(request: web.Request):
 
         form = await request.post()
         placement_options = json.loads(form.get("PLACEMENT_OPTIONS", "")) or {}
+        await send_dev_telegram_log(f'[@pivograd]\n\n{placement_options}')
         deal_id = placement_options.get("ENTITY_DATA", {}).get("entityId")
 
         session_maker = request.app["db_sessionmaker"]
