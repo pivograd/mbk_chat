@@ -7,7 +7,7 @@ from aiohttp import web
 
 from chatwoot_api.chatwoot_client import ChatwootClient
 from db.models.bx_deal_cw_link import BxDealCwLink
-from settings import but_map_dict
+from settings import but_map_dict, INBOX_TO_TRANSPORT
 from telegram.send_log import send_dev_telegram_log
 from utils.build_contact_info import build_contact_info
 
