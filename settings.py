@@ -102,6 +102,7 @@ AI_OPERATOR_CHATWOOT_IDS = [13, 14]
 BOTS_CFG: list[AgentCfg] = [
     AgentCfg(
         agent_code="maksim",
+        cw_token=os.getenv('MAKSIM_CW_BOT_TOKEN'),
         name="Максим",
         openai=OpenAIConfig(
             vector_store_id="vs_6891ca7fab5481919070e9974947b2f8",
@@ -147,6 +148,7 @@ BOTS_CFG: list[AgentCfg] = [
     ),
     AgentCfg(
         agent_code="pavel",
+        cw_token=os.getenv('PAVEL_CW_BOT_TOKEN'),
         name="Павел",
         openai=OpenAIConfig(
             vector_store_id="vs_68dbcc7b5a348191803d1a2de2e7b0b8",
@@ -185,6 +187,7 @@ BOTS_CFG: list[AgentCfg] = [
     AgentCfg(
         agent_code="test",
         name="МБК Guard",
+        cw_token=os.getenv('PAVEL_CW_BOT_TOKEN'),
         openai=OpenAIConfig(
             vector_store_id="vs_68dbcc7b5a348191803d1a2de2e7b0b8",
             main_prompt_file=f"{SERVER_PROMPT_PATH}/agents_instructions/main_pavel.txt",

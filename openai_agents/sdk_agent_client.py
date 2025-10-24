@@ -39,6 +39,9 @@ class SdkAgentsService:
         self.name = self.cfg.name
         self.agent_code = agent_code
         # self.vector_store_id = self.cfg.openai.vector_store_id
+        self.bot_cw = None
+        if self.cfg.cw_token:
+            self.bot_cw = ChatwootClient(token=self.cfg.cw_token)
         self.cw = ChatwootClient()
 
     @staticmethod
@@ -161,7 +164,8 @@ class SdkAgentsService:
             )
 
             if reply:
-                async with self.cw as cw:
+                cw_client = self.bot_cw if self.bot_cw else self.cw
+                async with cw_client as cw:
                     await cw.send_message(conv_id, reply)
 
             return {"reply": reply, "status": "ok"}

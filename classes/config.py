@@ -76,6 +76,7 @@ Transport = Annotated[Union[WAConfig, TGConfig], Field(discriminator="kind")]
 
 class AgentCfg(BaseModel):
     agent_code: str
+    cw_token: str
     name: str
     chatwoot: ChatwootCfg = Field(default_factory=ChatwootCfg.from_env)
     openai: OpenAIConfig

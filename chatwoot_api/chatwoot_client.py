@@ -279,6 +279,9 @@ class ChatwootClient:
         Отправляет сообщение в chatwoot
         message_type: 1 - от лица оператора, 0 - от лица клиента
         """
+        if message_type in (0, 1):
+            message_type = "outgoing" if message_type == 1 else "incoming"
+
         url = f"/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/messages"
         payload: Dict[str, Any] = {
             "content": content,
