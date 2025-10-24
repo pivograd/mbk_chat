@@ -22,6 +22,9 @@ from db.models.bx_processed_call import BxProcessedCall  # noqa: F401
 from db.models.contact_routing import ContactRouting  # noqa: F401
 from db.models.rr_cursor import RRCursor  # noqa: F401
 from db.models.transport_activation import TransportActivation  # noqa: F401
+from db.models.bx_deal_cw_link import BxDealCwLink  # noqa: F401
+from db.models.bx_contact_cw_map import  BxContactCwMap  # noqa: F401
+from db.models.transcription_job import  TranscriptionJob  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

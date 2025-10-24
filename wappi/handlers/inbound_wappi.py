@@ -8,7 +8,8 @@ from aiohttp import web
 from chatwoot_api.chatwoot_client import ChatwootClient
 from settings import INBOX_TO_TRANSPORT
 from openai_agents.functions.analyze_image import analyze_image
-from openai_agents.transcribation_client import TranscribeClient, _extract_transcription_text
+from bx24.bx_utils.parse_call_info import _extract_transcription_text
+from openai_agents.transcribation_client import TranscribeClient
 from telegram.send_log import send_dev_telegram_log
 from utils.download_to_temp_file import download_to_temp
 from utils.ffmpeg_convert_to_wav import convert_to_wav_via_imageio_ffmpeg

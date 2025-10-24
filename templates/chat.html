@@ -70,6 +70,13 @@
   <div class="header">
     <div class="title">Диалог{% if conversation_id %} #{{ conversation_id }}{% endif %}</div>
     <div class="header-actions">
+      <select id="conv-select" class="btn">
+        {% for l in links %}
+          <option value="{{ l.cw_conversation_id }}" {% if l.cw_conversation_id == selected_conv_id %}selected{% endif %}>
+            Inbox #{{ l.cw_inbox_id }} · Диалог #{{ l.cw_conversation_id }}{% if l.is_primary %} · основной{% endif %}
+          </option>
+        {% endfor %}
+      </select>
       <button id="send-contact-btn" class="btn"
               {% if not _deal_id %}title="ID сделки не передан в шаблон" disabled{% endif %}>
         Отправить контакт ответственного
@@ -149,7 +156,7 @@
         sendBtn.disabled = true;
         showNotice('Отправляем контакт…', false);
 
-        const resp = await fetch('https://lk.mbk-chat.ru/cw/send_contact', {
+        const resp = await fetch('https://api.mbk-chat.ru/bx24/mbkchat/send_contact', {
           method: 'POST',
           body: JSON.stringify({ deal_id: dealId, portal_domain: portalDomain })
         });
@@ -245,6 +252,38 @@
       var scroller = document.querySelector('.scroll');
       if (scroller){ scroller.scrollTop = scroller.scrollHeight; }
       resizeB24(FIXED_DIALOG_HEIGHT);
+    });
+  }
+  var convSelect = document.getElementById('conv-select');
+  if (convSelect){
+    convSelect.addEventListener('change', async function(){
+      try{
+        var dealId = document.body.dataset.dealId || '';
+        var portalDomain = document.body.dataset.domain || '';
+        var conversationId = convSelect.value;
+
+        if (!dealId || !portalDomain || !conversationId){
+          showNotice('Не хватает параметров для выбора диалога', true);
+          return;
+        }
+        showNotice('Выбираем диалог…', false);
+        const resp = await fetch('https://api.mbk-chat.ru/bx24/mbkchat/select_dialog', {
+          method: 'POST',
+          body: JSON.stringify({
+            deal_id: Number(dealId),
+            portal_domain: portalDomain,
+            conversation_id: Number(conversationId)
+          })
+        });
+        const data = await resp.json().catch(()=> ({}));
+        if (!data || data.success !== true){
+          showNotice(data && data.message ? data.message : 'Не удалось выбрать диалог', true);
+          return;
+        }
+        location.reload();
+      }catch(err){
+        showNotice('Ошибка выбора диалога: ' + (err && err.message ? err.message : String(err)), true);
+      }
     });
   }
 })();
