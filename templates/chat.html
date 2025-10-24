@@ -73,7 +73,7 @@
       <select id="conv-select" class="btn">
         {% for l in links %}
           <option value="{{ l.cw_conversation_id }}" {% if l.cw_conversation_id == selected_conv_id %}selected{% endif %}>
-            Inbox #{{ l.cw_inbox_id }} · Диалог #{{ l.cw_conversation_id }}{% if l.is_primary %} · основной{% endif %}
+             {{ l.kind }} · Диалог #{{ l.cw_conversation_id }}{% if l.is_primary %} · выбран{% endif %}
           </option>
         {% endfor %}
       </select>

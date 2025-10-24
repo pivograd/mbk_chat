@@ -202,12 +202,6 @@ class Bx24Deal(Base):
                 )
                 return false_response
 
-            agent_code = PORTAL_AGENTS.get(persistent.bx_portal, {}).get(persistent.bx_funnel_id)
-            if not agent_code:
-                await send_dev_telegram_log(f'[init_chatwoot]\nНе удалось получить агента!\nbx portal: {persistent.bx_portal}'
-                                            f'\nbx funnel id: {persistent.bx_funnel_id}\nbx deal id: {persistent.bx_id}', "WARNING")
-                return false_response
-
             identifier = phone.lstrip("+")
             conversation_ids = []
             async with ChatwootClient() as cw:
@@ -452,6 +446,7 @@ class Bx24Deal(Base):
 
                     message = f'Обратите внимание на переписку Агента с клиентом в mbk-chat!\nОбнаруженно слово: {marker}\nID диалога в CW: {conversation_id}'
                     deal.but.call_api_method('im.message.add',{'DIALOG_ID': f'chat{bx_chat_id}', 'MESSAGE': message}).get('result')
+                    # TODO: выставить в сделке поле был призыва менеджера в True
 
                 return True
 

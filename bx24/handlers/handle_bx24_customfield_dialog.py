@@ -21,7 +21,6 @@ async def handle_bx24_customfield_dialog(request: web.Request):
 
         form = await request.post()
         placement_options = json.loads(form.get("PLACEMENT_OPTIONS", "")) or {}
-        await send_dev_telegram_log(f'[@pivograd]\n\n{placement_options}')
         deal_id = placement_options.get("ENTITY_DATA", {}).get("entityId")
 
         session_maker = request.app["db_sessionmaker"]
@@ -58,6 +57,7 @@ async def handle_bx24_customfield_dialog(request: web.Request):
                 {
                     "cw_conversation_id": l.cw_conversation_id,
                     "cw_inbox_id": l.cw_inbox_id,
+                    "kind": INBOX_TO_TRANSPORT[l.cw_inbox_id].kind,
                     "is_primary": l.is_primary,
                     "created_at": int(l.created_at.timestamp()) if l.created_at else 0,
                 }

@@ -11,9 +11,8 @@ AI_PROXY = 'http://150.241.122.84:3333/v1/'
 # Bitrix24
 PORTAL_AGENTS = {
     'forestvologda.bitrix24.ru': {
-        '44': 8,
-        '26': 3,
-        '60': 4,
+        '26': 'maksim',
+        '60': 'pavel',
     },
 }
 
@@ -216,3 +215,12 @@ BOTS_CFG: list[AgentCfg] = [
 
 AGENTS_BY_CODE: dict[str, AgentCfg] = {a.agent_code: a for a in BOTS_CFG}
 INBOX_TO_TRANSPORT = {t.chatwoot.inbox_id: t for agent in BOTS_CFG for t in agent.transports}
+
+AGENT_TO_INBOX_IDS: dict[str, list[int]] = {
+    agent.agent_code: [
+        t.chatwoot.inbox_id
+        for t in agent.transports
+        if getattr(t, "chatwoot", None) and getattr(t.chatwoot, "inbox_id", None) is not None
+    ]
+    for agent in BOTS_CFG
+}

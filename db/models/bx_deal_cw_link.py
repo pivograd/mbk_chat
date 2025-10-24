@@ -8,6 +8,7 @@ from sqlalchemy import Integer, String, DateTime, UniqueConstraint, Index, func,
     update
 
 from db.models.base import Base
+from settings import AGENT_TO_INBOX_IDS, PORTAL_AGENTS
 
 
 class BxDealCwLink(Base):
@@ -36,13 +37,31 @@ class BxDealCwLink(Base):
     @classmethod
     async def get_links_for_deal(cls, session: AsyncSession, portal: str, deal_id: int) -> Sequence["BxDealCwLink"]:
         """
-
+        Возвращает связи сделки, отфильтрованные по списку допустимых inbox'ов агента
         """
-        q = (
-            select(cls)
-            .where(cls.bx_portal == portal, cls.bx_deal_id == deal_id)
-            .order_by(desc(cls.is_primary), desc(cls.created_at))
+        from db.models.bx24_deal import Bx24Deal
+
+        # Вычисляем inboxы для текущей сделки
+        deal = await session.scalar(
+            select(Bx24Deal).where(
+                Bx24Deal.bx_portal == portal,
+                Bx24Deal.bx_id == int(deal_id),
+            )
         )
+        bx_funnel_id = deal.bx_funnel_id if deal else None
+        agent_code = PORTAL_AGENTS.get(portal, {}).get(bx_funnel_id)
+        agent_inboxes = AGENT_TO_INBOX_IDS.get(agent_code) or []
+
+        q = select(cls).where(
+            cls.bx_portal == portal,
+            cls.bx_deal_id == deal_id,
+        )
+
+        if agent_inboxes:
+            q = q.where(cls.cw_inbox_id.in_(agent_inboxes))
+
+        q = q.order_by(desc(cls.is_primary), desc(cls.created_at))
+
         return (await session.execute(q)).scalars().all()
 
     @classmethod
