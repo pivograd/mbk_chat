@@ -35,6 +35,9 @@ async def handle_deal_update(request):
                         await send_dev_telegram_log(f'[handle_deal_update]\nЗанято другим процессом\nevent_code: {event_code}', 'DEV')
                         return web.Response(text="Уже обрабатывается", status=200)
                     deal_obj: Bx24Deal = await Bx24Deal.get_or_create(session, deal_id=int(deal_id), domain=domain)
+                    if not deal_obj:
+                        await send_dev_telegram_log(f'[handle_deal_update]\nНе уадлось получить/создать deal_obj\ndeal_id: {deal_id}', 'WARNING')
+                        return web.Response(text="Не уадлось получить/создать deal_obj", status=200)
                     ok, conversation_ids, cw_contact_id = await deal_obj.init_chatwoot(session)
                     if not ok or not conversation_ids:
                         return web.Response(text="Сделка не связана с chatwoot", status=200)
