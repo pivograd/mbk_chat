@@ -454,7 +454,7 @@ class ChatwootClient:
 
             page = str(int(page) + 1)
 
-        return ids  # поддержка 'Z'
+        return ids
 
     async def get_open_conversation_ids(self, inbox_id: Optional[int] = None) -> List[int]:
         """

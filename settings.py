@@ -16,6 +16,17 @@ PORTAL_AGENTS = {
     },
 }
 
+BITRIX_CFG_BY_AGENT_CODE = {
+    'maksim': {
+        'portal': 'forestvologda.bitrix24.ru',
+        'funnel_id': '26'
+    },
+    'pavel': {
+        'portal': 'forestvologda.bitrix24.ru',
+        'funnel_id': '60'
+    }
+}
+
 BX_SOURCE_FIELD = 'SOURCE_ID'
 
 # BX артконтекст
@@ -66,9 +77,9 @@ DATABASE_USER = os.getenv('DATABASE_USER')
 DATABASE_PASSWORD=os.getenv('DATABASE_PASSWORD')
 DATABASE_NAME=os.getenv('DATABASE_NAME')
 #DEV
-# DATABASE_USER = 'postgres'
-# DATABASE_PASSWORD= 'vea'
-# DATABASE_NAME='mbk_agents'
+DATABASE_USER = 'postgres'
+DATABASE_PASSWORD= 'vea'
+DATABASE_NAME='mbkchat'
 
 DATABASE_URL = f'postgresql+asyncpg://{DATABASE_USER}:{DATABASE_PASSWORD}@127.0.0.1:5432/{DATABASE_NAME}'
 
@@ -233,3 +244,12 @@ AGENT_TO_INBOX_IDS: dict[str, list[int]] = {
     ]
     for agent in BOTS_CFG
 }
+
+INBOX_TO_AGENT_CODE: dict[int, str] = {
+    t.chatwoot.inbox_id: agent.agent_code
+    for agent in BOTS_CFG
+    for t in agent.transports
+    if getattr(t, "chatwoot", None) and getattr(t.chatwoot, "inbox_id", None) is not None
+}
+
+ # TODO: чем больше мап - тем больше цена ошибки коллизии, в будущем нужна надежная защита
