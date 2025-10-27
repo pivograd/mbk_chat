@@ -71,6 +71,8 @@ class OpenAIConfig(BaseModel):
     catalogs_file: str
     design_cost: str
     price_complectation: str
+    glued_beam_size: str
+    foundation_size: str
 
 Transport = Annotated[Union[WAConfig, TGConfig], Field(discriminator="kind")]
 

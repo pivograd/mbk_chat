@@ -109,7 +109,9 @@ BOTS_CFG: list[AgentCfg] = [
             main_prompt_file=f"{SERVER_PROMPT_PATH}/agents_instructions/main_maksim.txt",
             catalogs_file=f"{SERVER_PROMPT_PATH}/agents_instructions/catalogs/maksim_catalogs.txt",
             design_cost="45 000",
-            price_complectation="Базовая комплектация"
+            price_complectation="Базовая комплектация",
+            glued_beam_size="160х190 мм",
+            foundation_size="(150х150 мм / L - 3000 мм)",
         ),
         transports=[
             WAConfig(
@@ -155,7 +157,9 @@ BOTS_CFG: list[AgentCfg] = [
             main_prompt_file=f"{SERVER_PROMPT_PATH}/agents_instructions/main_pavel.txt",
             catalogs_file=f"{SERVER_PROMPT_PATH}/agents_instructions/catalogs/pavel_catalogs.txt",
             design_cost="50 000",
-            price_complectation="Теплый контур"
+            price_complectation="Теплый контур",
+            glued_beam_size="200х190 мм",
+            foundation_size="(200х200 мм / L - 3000 мм)",
         ),
         transports=[
             WAConfig(
@@ -193,7 +197,9 @@ BOTS_CFG: list[AgentCfg] = [
             main_prompt_file=f"{SERVER_PROMPT_PATH}/agents_instructions/main_pavel.txt",
             catalogs_file=f"{SERVER_PROMPT_PATH}/agents_instructions/catalogs/pavel_catalogs.txt",
             design_cost="50 000",
-            price_complectation="Теплый контур"
+            price_complectation="Теплый контур",
+            glued_beam_size="200х190 мм",
+            foundation_size="(200х200 мм / L - 3000 мм)",
         ),
         transports=[
             TGConfig(
