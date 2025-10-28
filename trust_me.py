@@ -5,7 +5,7 @@ from telegram.send_log import send_dev_telegram_log
 
 async def trust_me(request: web.Request):
     await send_dev_telegram_log('[TRUSTME]', 'DEV')
-    DEV_TUNNEL = 'https://37f028b5-aae7-485e-bb8b-a6cfff3186fe.tunnel4.com'
+    DEV_TUNNEL = 'https://32c6e15a-a934-4ead-8117-0243a131caba.tunnel4.com'
     body = await request.read()
     target = f"{DEV_TUNNEL}{request.path_qs}"
 
