@@ -10,7 +10,7 @@ https://api.mbk-chat.ru/files/Ktalog_spb_1_etazh.pdf
 
 Каталог домов из теплой керамики
 
-https://api.mbk-chat.ru/files/Katalog_spb_teplaya_keramika
+https://api.mbk-chat.ru/files/Katalog_spb_teplaya_keramika.pdf
 
 Каталог домов из бревна
 
