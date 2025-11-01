@@ -16,12 +16,13 @@ async def handle_form_website_webhook(request):
     data = await request.json()
     try:
         phone = re.sub(r'\D', '', data.get("phone", ""))
+        domain = data.get("title", "").split(' - ')[-1]
         phone = normalize_phone(phone)
         comment = data.get("comment", "")
         name_match = re.search(r'Имя\s*:\s*(.+)', comment)
         match = re.search(r'Форма\s*:\s*([^\n\r]+)', comment)
         form_type = match.group(1).strip() if match else 'quiz'
-        message = get_message_from_comment(comment, form_type)
+        message = get_message_from_comment(comment, form_type, domain)
         agent_name = data.get("agent_name")
         await send_dev_telegram_log(f'NEW\n[handle_form_website_webhook]\nЗапрос с лендоса!\n\ndata: {data}', 'DEV')
         if not agent_name:
