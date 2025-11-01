@@ -19,7 +19,7 @@ class WappiClient:
     Клиент для работы с Wappi Telegram API.
     """
 
-    def __init__(self, token: str, profile_id: str, timeout: float = 15.0, session: Optional[aiohttp.ClientSession] = None) -> None:
+    def __init__(self, token: str, profile_id: str, timeout: float = 60.0, session: Optional[aiohttp.ClientSession] = None) -> None:
         self.base_url = "https://wappi.pro"
         self.api_prefix = "/tapi"
         self.token = token
@@ -53,6 +53,7 @@ class WappiClient:
         params: Optional[Dict[str, Any]] = None,
         json: Optional[Dict[str, Any]] = None,
         expected_status: Union[int, Tuple[int, ...]] = (200, 201),
+        dont_raise: bool = True,
     ):
         """
         Базовый асинхронный запрос.
@@ -74,21 +75,22 @@ class WappiClient:
         async with self._session.request(method, url, headers=self._headers, params=q, json=json) as resp:
             content_type = resp.headers.get("Content-Type", "")
             ok = resp.status in expected
-
-            if ok:
+            # Парсим тело всегда
+            raw = await resp.text()
+            data = None
+            if "application/json" in content_type.lower():
                 try:
-                    return await resp.json()
+                    data = await resp.json()
                 except Exception:
-                    return await resp.text()
+                    data = {"raw": raw}
+            else:
+                data = raw
 
-            # Обработка ошибок
-            try:
-                body = await resp.text()
-            except Exception:
-                body = "<no body>"
+            if ok or dont_raise:
+                return resp.status, data, dict(resp.headers)
 
-            msg = f"[Wappi] HTTP {resp.status} for {method} {url}. Body: {body}"
-            await send_dev_telegram_log(f'[WappiClient._request]\n{msg}', 'DEV')
+            msg = f"[Wappi] HTTP {resp.status} for {method} {url}. Body: {raw}"
+            await send_dev_telegram_log(f"[WappiClient._request]\n{msg}", "ERROR")
             raise WappiError(msg)
 
 
@@ -249,6 +251,7 @@ class WappiClient:
                 "/async/message/file/url/send",
                 json=payload,
                 expected_status=(200, 201, 202),
+                dont_raise=False,
             )
         except Exception as e:
             await send_dev_telegram_log(f'[WappiClient.send_media_by_url]\nОшибка при отправки файла!\n{e}','ERROR')
@@ -278,6 +281,7 @@ class WappiClient:
                 "/sync/message/file/url/send",
                 json=payload,
                 expected_status=(200, 201, 202),
+                dont_raise=False,
             )
         except Exception as e:
             await send_dev_telegram_log(
