@@ -43,7 +43,7 @@ async def init_db(app):
 
         async with local_session() as session:
             await bootstrap_transport_activation(session)
-        await send_dev_telegram_log('[init_db]\nОтрабтал без ошибок', 'DEV')
+        await send_dev_telegram_log('[init_db]\nОтрабтал без ошибок\nВЕБ СЕРВИС ПЕРЕЗАПУЩЕН!', 'WARNING')
     except Exception as e:
         await send_dev_telegram_log(f'[init_db]\nОШИБКА\n {e}', 'ERROR')
 
