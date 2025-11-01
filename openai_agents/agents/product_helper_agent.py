@@ -14,7 +14,7 @@ def build_product_helper_agent(cfg: OpenAIConfig,  model: str = MODEL_MAIN) -> A
     product_prompt = insert_main_info_in_prompt(product_prompt, cfg)
 
     return Agent(
-        name="Product Helper",
+        name="Product Helper Agent",
         model=model,
         handoff_description=(
             "Работает с продуктовым файлом, отвечает клиенту про конкретный проект"

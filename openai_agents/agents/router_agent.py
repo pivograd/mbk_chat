@@ -9,7 +9,6 @@ from openai_agents.agents.manager_agent import build_manager_agent
 from openai_agents.agents.mortgage_agent import build_mortgage_agent
 from openai_agents.agents.product_helper_agent import build_product_helper_agent
 from openai_agents.agents.product_picker_agent import build_product_picker_agent
-from openai_agents.agents.products_agent import build_products_agent
 from openai_agents.agents.warmup_agent import build_warmup_agent
 from settings import MODEL_MINI, ROUTER_PROMPT_PATH
 from utils.read_txt_file import read_txt_file
