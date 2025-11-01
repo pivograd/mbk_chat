@@ -73,6 +73,12 @@ class OpenAIConfig(BaseModel):
     price_complectation: str
     glued_beam_size: str
     foundation_size: str
+    agent_name: str
+    agent_card: str
+    warranty: str
+    geography: str
+    office_address: str
+    website: str
 
 Transport = Annotated[Union[WAConfig, TGConfig], Field(discriminator="kind")]
 

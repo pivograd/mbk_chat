@@ -93,11 +93,13 @@ TRANSCRIBE_MODEL = "gpt-4o-transcribe"
 
 SERVER_PROMPT_PATH = '/opt/mbk/mbk_chat/openai_agents/prompts'
 STYLE_BLOCK_PATH = f"{SERVER_PROMPT_PATH}/reusable/style.txt"
+MAIN_BLOCK_PATH = f"{SERVER_PROMPT_PATH}/reusable/main_info.txt"
 COMPANY_INFO_BLOCK_PATH = f"{SERVER_PROMPT_PATH}/reusable/company_info.txt"
 DESIGN_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/design_agent.txt"
 MANAGER_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/manager_agent.txt"
 MORTGAGE_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/mortgage_agent.txt"
-PRODUCT_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/products_agent.txt"
+PRODUCT_HELPER_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/product_helper_agent.txt"
+PRODUCT_PICKER_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/product_picker_agent.txt"
 ROUTER_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/router_agent.txt"
 WARMUP_PROMPT_PATH = f"{SERVER_PROMPT_PATH}/reusable/warmup_agent.txt"
 
@@ -123,6 +125,12 @@ BOTS_CFG: list[AgentCfg] = [
             price_complectation="Базовая комплектация",
             glued_beam_size="160х190 мм",
             foundation_size="(150х150 мм / L - 3000 мм)",
+            agent_name="Максим",
+            agent_card="https://ii.mbk-chat.ru/viz_maksim.jpg",
+            warranty="30 лет",
+            geography="Санкт-Петербург, Ленинградская область + граничащие области (Карелия, Новгородская, Псковская и Вологодская области)",
+            office_address="метро Технологический институт, Измайловский проспект, д.7",
+            website="https://вологодскоезодчество.рф",
         ),
         transports=[
             WAConfig(
@@ -171,6 +179,12 @@ BOTS_CFG: list[AgentCfg] = [
             price_complectation="Теплый контур",
             glued_beam_size="200х190 мм",
             foundation_size="(200х200 мм / L - 3000 мм)",
+            agent_name="Павел",
+            agent_card="https://ii.mbk-chat.ru/viz_Pavel.jpg",
+            warranty="25 лет",
+            geography="Москва и Московская область + граничащие области (Тверская, Ярославская, Владимирская, Рязанская, Тульская, Калужская, Смоленская)",
+            office_address="Дмитровское шоссе, 81",
+            website="https://москва.вологодскоезодчество.рф",
         ),
         transports=[
             WAConfig(
@@ -211,6 +225,12 @@ BOTS_CFG: list[AgentCfg] = [
             price_complectation="Теплый контур",
             glued_beam_size="200х190 мм",
             foundation_size="(200х200 мм / L - 3000 мм)",
+            agent_name="Павел",
+            agent_card="https://ii.mbk-chat.ru/viz_Pavel.jpg",
+            warranty="25 лет",
+            geography="Москва и Московская область + граничащие области (Тверская, Ярославская, Владимирская, Рязанская, Тульская, Калужская, Смоленская)",
+            office_address="Дмитровское шоссе, 81",
+            website="https://москва.вологодскоезодчество.рф",
         ),
         transports=[
             TGConfig(
