@@ -2,16 +2,16 @@
 
 Каталог домов из клееного бруса
 
-https://api.mbk-chat.ru/files/Каталог_СПБ_клееный_брус.pdf
+https://api.mbk-chat.ru/files/Katalog_spb_kb.pdf
 
 Каталог одноэтажных домов из клееного бруса
 
-https://api.mbk-chat.ru/files/Каталог_СПБ_одноэтажный_брус.pdf
+https://api.mbk-chat.ru/files/Ktalog_spb_1_etazh.pdf
 
 Каталог домов из теплой керамики
 
-https://api.mbk-chat.ru/files/Каталог_СПБ_теплая_керамика.pdf
+https://api.mbk-chat.ru/files/Katalog_spb_teplaya_keramika
 
 Каталог домов из бревна
 
-https://api.mbk-chat.ru/files/Каталог_СПБ_бревно.pdf
+https://api.mbk-chat.ru/files/Katalog_spb_brevno.pdf
