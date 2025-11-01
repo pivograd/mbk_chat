@@ -75,22 +75,23 @@ class WappiClient:
         async with self._session.request(method, url, headers=self._headers, params=q, json=json) as resp:
             content_type = resp.headers.get("Content-Type", "")
             ok = resp.status in expected
-            # Парсим тело всегда
-            raw = await resp.text()
-            data = None
-            if "application/json" in content_type.lower():
+            if ok:
                 try:
-                    data = await resp.json()
+                    return await resp.json()
                 except Exception:
-                    data = {"raw": raw}
-            else:
-                data = raw
+                    return await resp.text()
 
-            if ok or dont_raise:
-                return resp.status, data, dict(resp.headers)
+            # Обработка ошибок
+            try:
+                body = await resp.text()
+            except Exception:
+                body = "<no body>"
 
-            msg = f"[Wappi] HTTP {resp.status} for {method} {url}. Body: {raw}"
-            await send_dev_telegram_log(f"[WappiClient._request]\n{msg}", "ERROR")
+            if dont_raise:
+                return resp.status, body, dict(resp.headers)
+
+            msg = f"[Wappi] HTTP {resp.status} for {method} {url}. Body: {body}"
+            await send_dev_telegram_log(f'[WappiClient._request]\n{msg}', 'ERROR')
             raise WappiError(msg)
 
 
