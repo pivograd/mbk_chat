@@ -590,3 +590,31 @@ class ChatwootClient:
         payload = resp.get("payload") or {}
         phone = payload.get("phone_number").lstrip("+")
         return phone or None
+
+
+    async def get_contact_id_by_conversation(self, conversation_id: int) -> Optional[int]:
+        """
+        Возвращает Chatwoot contact_id по conversation_id.
+        """
+        url = f"/api/v1/accounts/{self.account_id}/conversations/{conversation_id}"
+        try:
+            resp = await self._request("GET", url, expected_status=200)
+        except ChatwootError as e:
+            await send_dev_telegram_log(f"[get_contact_id_by_conversation]\nОшибка при получении диалога {conversation_id}\nerror: {e}", "ERROR")
+            return None
+
+        return resp.get('meta', {}).get('sender', {}).get('id', None)
+
+
+    async def get_contact_phone_by_conversation(self, conversation_id: int) -> Optional[str]:
+        """
+        Возвращает номер телефон контакта Chatwoot по conversation_id.
+        """
+        url = f"/api/v1/accounts/{self.account_id}/conversations/{conversation_id}"
+        try:
+            resp = await self._request("GET", url, expected_status=200)
+        except ChatwootError as e:
+            await send_dev_telegram_log(f"[get_contact_id_by_conversation]\nОшибка при получении диалога {conversation_id}\nerror: {e}", "ERROR")
+            return None
+
+        return resp.get('meta', {}).get('sender', {}).get('phone_number', '')

@@ -10,11 +10,15 @@ from agents import Runner
 
 from chatwoot_api.chatwoot_client import ChatwootClient
 from db.models.chatwoot_conversation import ChatwootConversation
-from settings import AGENTS_BY_CODE
+from green_api.functions.get_instance_settings import get_instance_phone
+from openai_agents.utils.formation_contact_correspondence import formation_contact_correspondence
+from settings import AGENTS_BY_CODE, INBOX_TO_TRANSPORT
 from openai_agents.agents.router_agent import build_new_router_agent
 from openai_agents.utils.apply_typing_delay import apply_typing_delay
 from settings import AI_OPERATOR_CHATWOOT_IDS
 from telegram.send_log import send_dev_telegram_log
+from wazzup_collector_api.get_chat import get_chat
+from wazzup_collector_api.get_contact_chats import get_contact_chats
 
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 
@@ -67,6 +71,14 @@ class SdkAgentsService:
         history: list[dict[str, str]] = []
         async with self.cw as cw:
             messages = await cw.get_all_messages(conversation_id)
+            contact_phone = await cw.get_contact_phone_by_conversation(conversation_id)
+            chats = await get_contact_chats(contact_phone)
+            chats_string = formation_contact_correspondence(chats)
+            if chats_string:
+                history.append({
+                    "role": "assistant",
+                    "content": f"[ПЕРЕПИСКА КЛИЕНТА С МЕНЕДЖЕРАМИ!]"
+                               f"{chats_string}"})
 
         for msg in messages:
             role = "user" if msg.get("message_type") == 0 else "assistant"
