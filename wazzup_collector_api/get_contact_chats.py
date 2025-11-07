@@ -16,5 +16,5 @@ async def get_contact_chats(contact_phone: str) -> list[dict]:
         return data.get('conversations')
 
     except Exception as e:
-        await send_dev_telegram_log(f'[get_chat]\nКритическая ошибка\nERROR: {e}', 'ERROR')
+        await send_dev_telegram_log(f'[get_contact_chat]\nКритическая ошибка\nERROR: {e}', 'ERROR')
         return None
