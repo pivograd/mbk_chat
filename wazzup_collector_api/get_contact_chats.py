@@ -8,10 +8,14 @@ async def get_contact_chats(contact_phone: str) -> list[dict]:
         url = f'https://wazzup.mbk-chat.ru/api/contact/chats/history?contact_phone={contact_phone}'
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
+                if resp.status == 404:
+                    data = await resp.json()
+                    return data
                 resp.raise_for_status()
                 data = await resp.json()
-                if not data.get('ok'):
-                    return data
+
+        if not data.get('ok'):
+            return data
 
         return data.get('conversations')
 
