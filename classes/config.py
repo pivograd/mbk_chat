@@ -164,15 +164,15 @@ class AgentCfg(BaseModel):
 
                     # Повторно получаем binding уже под локом
                     q2 = await conn.execute(
-                        select(ContactRouting).where(
+                        select(ContactRouting.inbox_id).where(
                             ContactRouting.phone == phone,
                             ContactRouting.agent_code == self.agent_code,
                             ContactRouting.kind == kind,
                         )
                     )
-                    binding_locked = q2.scalar_one_or_none()
-                    if binding_locked and binding_locked.inbox_id in inboxes:
-                        return cfg_by_inbox[binding_locked.inbox_id]
+                    inbox_id = q2.scalar_one_or_none()
+                    if inbox_id and inbox_id in inboxes:
+                        return cfg_by_inbox[inbox_id]
 
                     qcur = await conn.execute(
                         select(RRCursor.id, RRCursor.last_index)
