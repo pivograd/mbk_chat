@@ -56,6 +56,14 @@ async def inbound_green_api(request, agent_code, inbox_id):
                 await send_dev_telegram_log(f"[inbound_green_api]\n\nИнстанс заблокирован!\n@pivograd\n@kateradzivil\n@Im_Artem\n\nномер телефона: {phone}\ninbox_id={inbox_id}: состояние инстанса={state_instance} → is_active=False","STATUS", )
                 return web.json_response({"status": "ok"})
 
+        elif type_webhook == "incomingCall":
+            phone = data.get("instanceData", {}).get("wid", "").replace("@c.us", "")
+            phone = normalize_phone(phone)
+            await safe_send_to_chatwoot(phone, str(phone), '', cw_config, comment='[Входящий звонок!]', message_type=0)
+            return web.json_response({"status": "ok"})
+
+        # elif type_webhook == "incomingBlock":
+        #     ...
 
         elif not type_webhook == "incomingMessageReceived":
             return web.json_response({"status": "ok"})

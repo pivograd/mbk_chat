@@ -282,6 +282,9 @@ class ChatwootClient:
         if message_type in (0, 1):
             message_type = "outgoing" if message_type == 1 else "incoming"
 
+        if not content:
+            return {"status": "ok", 'message': 'no message'}
+
         url = f"/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/messages"
         payload: Dict[str, Any] = {
             "content": content,
