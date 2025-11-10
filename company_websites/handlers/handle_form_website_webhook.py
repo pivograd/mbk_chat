@@ -28,6 +28,8 @@ async def handle_form_website_webhook(request):
         if not agent_name:
             await send_dev_telegram_log(f'[handle_form_website_webhook]\nНе указано имя агента!\ndata: {data}', 'WARNING')
             return web.Response(text="❌ Не указано имя агента", status=400)
+        if data.get("dev_mode"):
+            return web.Response(text="dev_mode", status=200)
 
         name = None
         if name_match:
