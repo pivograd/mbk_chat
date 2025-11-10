@@ -45,6 +45,10 @@ async def handle_form_website_webhook(request):
         async with session_maker() as session:
             transport_cfg = await agent_cfg.pick_transport(session, kind, phone)
 
+        if not transport_cfg:
+            await send_dev_telegram_log(f'[handle_form_website_webhook]\nkind: {kind}\n phone: {phone}\nagent_cfg: {agent_cfg}', 'WARNING')
+            return web.json_response({"status": "error", "message": "no valid transport"})
+
         if kind == 'tg':
             async with transport_cfg.get_wappi_client() as wappi_client:
                 # Сохраняем номер телефона в контакты ТГ
