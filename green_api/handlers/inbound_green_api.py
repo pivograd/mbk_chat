@@ -59,7 +59,7 @@ async def inbound_green_api(request, agent_code, inbox_id):
         elif type_webhook == "incomingCall":
             if data.get("status") != "offer":
                 return web.json_response({"status": "ok"})
-            phone = data.get("instanceData", {}).get("wid", "").replace("@c.us", "")
+            phone = data.get("from", {}).replace("@c.us", "")
             phone = normalize_phone(phone)
             await safe_send_to_chatwoot(phone, str(phone), '', cw_config, comment='[Входящий звонок!]', message_type=0)
             return web.json_response({"status": "ok"})
