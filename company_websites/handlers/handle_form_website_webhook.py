@@ -21,11 +21,6 @@ async def handle_form_website_webhook(request):
         if not agent_name:
             await send_dev_telegram_log(f'[handle_form_website_webhook]\nНе указано имя агента!\ndata: {data}', 'WARNING')
             return web.Response(text="❌ Не указано имя агента", status=400)
-        form_data = data.get("form_data")
-        if form_data:
-            message = await get_message_from_ai(data)
-            await send_dev_telegram_log(f'[handle_form_website_webhook]\nmessage: {message}','DEV')
-            return web.Response(text="dev_mode", status=200)
 
         phone = re.sub(r'\D', '', data.get("phone", ""))
         domain = data.get("title", "").split(' - ')[-1]
@@ -35,6 +30,11 @@ async def handle_form_website_webhook(request):
         match = re.search(r'Форма\s*:\s*([^\n\r]+)', comment)
         form_type = match.group(1).strip() if match else 'quiz'
         message = get_message_from_comment(comment, form_type, domain)
+
+        form_data = data.get("form_data")
+        if form_data:
+            message = await get_message_from_ai(data)
+            await send_dev_telegram_log(f'[handle_form_website_webhook]\nmessage: {message}','DEV')
 
         name = None
         if name_match:
