@@ -28,11 +28,11 @@ async def handle_bx24_customfield_dialog(request: web.Request):
         async with session_maker() as session:
             async with session.begin():
                 links = await BxDealCwLink.get_links_for_deal(session, portal=domain, deal_id=int(deal_id))
-                await send_dev_telegram_log(f'[handle_bx24_customfield_dialog]\nLINKS: {links}', 'WARNING')
+                await send_dev_telegram_log(f'[handle_bx24_customfield_dialog]\ndeal_id: {deal_id}\nLINKS: {links}', 'WARNING')
                 selected_conv_id = await BxDealCwLink.get_selected_conversation_id(session, portal=domain, deal_id=int(deal_id))
 
         if not links:
-            await send_dev_telegram_log(f'[handle_bx24_customfield_dialog]\nNOT LINKS: {links}', 'WARNING')
+            await send_dev_telegram_log(f'[handle_bx24_customfield_dialog]\ndeal_id: {deal_id}\nNO LINKS: {links}', 'WARNING')
             return {
                 "messages": [],
                 "conversation_id": None,
@@ -42,7 +42,7 @@ async def handle_bx24_customfield_dialog(request: web.Request):
                 "selected_conv_id": None,
                 "empty_reason": "Сделка не связана с диалогами mbk-chat",
             }
-        await send_dev_telegram_log(f'[handle_bx24_customfield_dialog]\nLINKS: {links}', 'WARNING')
+        await send_dev_telegram_log(f'[handle_bx24_customfield_dialog]\ndeal_id: {deal_id}\nYES LINKS: {links}', 'WARNING')
         messages = []
         if selected_conv_id:
             async with ChatwootClient() as cw:
