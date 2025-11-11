@@ -325,6 +325,14 @@ class Bx24Deal(Base):
                     f"Портал: {persistent.bx_portal}\nСделка: {persistent.bx_id}", 'WARNING'
                 )
                 return False
+            funnel_changed = False
+            new_funnel_raw = bx_deal.get('CATEGORY_ID')
+            if new_funnel_raw:
+                new_funnel_id = str(new_funnel_raw)
+                old_funnel_id = persistent.bx_funnel_id
+                if new_funnel_id != old_funnel_id:
+                    persistent.bx_funnel_id = new_funnel_id
+                    funnel_changed = True
 
             new_stage_id: Optional[str] = bx_deal.get('STAGE_ID')
             if not new_stage_id:
@@ -337,6 +345,8 @@ class Bx24Deal(Base):
             old_stage_id = persistent.stage_id
 
             if new_stage_id == old_stage_id:
+                if funnel_changed:
+                    await session.flush()
                 return True
 
             persistent.stage_id = new_stage_id
