@@ -5,6 +5,7 @@ from aiohttp import web
 from chatwoot_api.functions.safe_send_to_chatwoot import safe_send_to_chatwoot
 from settings import AGENTS_BY_CODE
 from telegram.send_log import send_dev_telegram_log
+from utils.get_message_from_ai import get_message_from_ai
 from utils.get_message_from_comment import get_message_from_comment
 from utils.normalize_phone import normalize_phone
 
@@ -15,6 +16,17 @@ async def handle_form_website_webhook(request):
     """
     data = await request.json()
     try:
+        agent_name = data.get("agent_name")
+        await send_dev_telegram_log(f'NEW\n[handle_form_website_webhook]\nЗапрос с лендоса!\n\ndata: {data}', 'DEV')
+        if not agent_name:
+            await send_dev_telegram_log(f'[handle_form_website_webhook]\nНе указано имя агента!\ndata: {data}', 'WARNING')
+            return web.Response(text="❌ Не указано имя агента", status=400)
+        form_data = data.get("form_data")
+        if form_data:
+            message = await get_message_from_ai(form_data)
+            await send_dev_telegram_log(f'[handle_form_website_webhook]\nmessage: {message}','DEV')
+            return web.Response(text="dev_mode", status=200)
+
         phone = re.sub(r'\D', '', data.get("phone", ""))
         domain = data.get("title", "").split(' - ')[-1]
         phone = normalize_phone(phone)
@@ -23,13 +35,6 @@ async def handle_form_website_webhook(request):
         match = re.search(r'Форма\s*:\s*([^\n\r]+)', comment)
         form_type = match.group(1).strip() if match else 'quiz'
         message = get_message_from_comment(comment, form_type, domain)
-        agent_name = data.get("agent_name")
-        await send_dev_telegram_log(f'NEW\n[handle_form_website_webhook]\nЗапрос с лендоса!\n\ndata: {data}', 'DEV')
-        if not agent_name:
-            await send_dev_telegram_log(f'[handle_form_website_webhook]\nНе указано имя агента!\ndata: {data}', 'WARNING')
-            return web.Response(text="❌ Не указано имя агента", status=400)
-        if data.get("form_data"):
-            return web.Response(text="dev_mode", status=200)
 
         name = None
         if name_match:
