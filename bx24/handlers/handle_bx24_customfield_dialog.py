@@ -15,6 +15,7 @@ from utils.build_contact_info import build_contact_info
 @aiohttp_jinja2.template("chat.html")
 async def handle_bx24_customfield_dialog(request: web.Request):
     try:
+        await send_dev_telegram_log(f'ХУG', 'WARNING')
         raw_qs = unquote(request.query_string or "")
         params = dict(parse_qsl(raw_qs, keep_blank_values=True))
         domain = params.get("DOMAIN")
