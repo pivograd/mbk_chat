@@ -31,6 +31,7 @@ async def handle_bx24_customfield_dialog(request: web.Request):
                 selected_conv_id = await BxDealCwLink.get_selected_conversation_id(session, portal=domain, deal_id=int(deal_id))
 
         if not links:
+            await send_dev_telegram_log(f'[handle_bx24_customfield_dialog]\nNOT LINKS: {links}', 'WARNING')
             return {
                 "messages": [],
                 "conversation_id": None,
