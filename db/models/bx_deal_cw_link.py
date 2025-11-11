@@ -9,6 +9,7 @@ from sqlalchemy import Integer, String, DateTime, UniqueConstraint, Index, func,
 
 from db.models.base import Base
 from settings import AGENT_TO_INBOX_IDS, PORTAL_AGENTS
+from telegram.send_log import send_dev_telegram_log
 
 
 class BxDealCwLink(Base):
@@ -58,6 +59,7 @@ class BxDealCwLink(Base):
         )
 
         if agent_inboxes:
+            await send_dev_telegram_log(f'[get_links_for_deal]\nagent_inboxes: {agent_inboxes}')
             q = q.where(cls.cw_inbox_id.in_(agent_inboxes))
 
         q = q.order_by(desc(cls.is_primary), desc(cls.created_at))
