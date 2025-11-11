@@ -23,7 +23,7 @@ async def handle_form_website_webhook(request):
             return web.Response(text="❌ Не указано имя агента", status=400)
         form_data = data.get("form_data")
         if form_data:
-            message = await get_message_from_ai(form_data)
+            message = await get_message_from_ai(data)
             await send_dev_telegram_log(f'[handle_form_website_webhook]\nmessage: {message}','DEV')
             return web.Response(text="dev_mode", status=200)
 
