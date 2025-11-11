@@ -6,12 +6,13 @@ from telegram.send_log import send_dev_telegram_log
 from utils.normalize_phone import normalize_phone
 
 
-async def  handle_lead_on_site(request):
+async def handle_lead_on_site(request):
     """
     Обработчик заявок с сайта LEADON
     """
     data = await request.json()
     try:
+        await send_dev_telegram_log(f'[handle_lead_on_site]\nЗаявка с LEADON', 'DEV')
         agent_name = data.get("agent_name")
         phone = normalize_phone(data.get("phone", ''))
         if not agent_name or not phone:
