@@ -251,6 +251,36 @@ BOTS_CFG: list[AgentCfg] = [
             )
         ],
     ),
+    AgentCfg(
+        agent_code="leadon",
+        name="LEADON",
+        cw_token=os.getenv('PAVEL_CW_BOT_TOKEN'),
+        openai=OpenAIConfig(
+            vector_store_id="vs_68dbcc7b5a348191803d1a2de2e7b0b8",
+            main_prompt_file=f"{SERVER_PROMPT_PATH}/agents_instructions/main_pavel.txt",
+            catalogs_file=f"{SERVER_PROMPT_PATH}/agents_instructions/catalogs/pavel_catalogs.txt",
+            design_cost="50 000",
+            price_complectation="Теплый контур",
+            glued_beam_size="200х190 мм",
+            foundation_size="(200х200 мм / L - 3000 мм)",
+            agent_name="Павел",
+            agent_card="https://ii.mbk-chat.ru/viz_Pavel.jpg",
+            warranty="25 лет",
+            geography="Москва и Московская область + граничащие области (Тверская, Ярославская, Владимирская, Рязанская, Тульская, Калужская, Смоленская)",
+            office_address="Дмитровское шоссе, 81",
+            website="https://москва.вологодскоезодчество.рф",
+        ),
+        transports=[
+            WAConfig(
+                instance_id=os.getenv('LEADON_GREEN_API_INSTANCE_ID'),
+                api_token=os.getenv('LEADON_GREEN_API_TOKEN'),
+                chatwoot=ChatwootBinding(
+                    inbox_id=18,
+                    assignee_id='13',
+                )
+            )
+        ],
+    ),
 ]
 
 AGENTS_BY_CODE: dict[str, AgentCfg] = {a.agent_code: a for a in BOTS_CFG}

@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from bx24.handlers.handle_deal_update import handle_deal_update
 from chatwoot_api.handlers.handle_from_chatwoot import handle_from_chatwoot
 from chatwoot_api.handlers.handle_to_chatwoot import handle_to_chatwoot
+from company_websites.handlers.handle_lead_on_site import handle_lead_on_site
 from trust_me import trust_me
 
 env_path = pathlib.Path(__file__).resolve().parent / ".env"
@@ -32,6 +33,7 @@ TEMPLATES_DIR = BASE_DIR / "templates"
 aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(str(TEMPLATES_DIR)))
 # Website
 app.router.add_post("/webhook/v3/website", handle_form_website_webhook)
+app.router.add_post("/webhook/leadon/website", handle_lead_on_site)
 
 app.router.add_post("/trust/me", trust_me)
 # BX24
