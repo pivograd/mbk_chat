@@ -110,7 +110,7 @@ async def get_message_from_ai(lead_data: Dict[str, Any]) -> str:
             instructions=prompt,
             input=messages,
         )
-        return resp.output_parsed
+        return resp.output_text
 
     except Exception as e:
 
