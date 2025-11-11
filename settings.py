@@ -131,6 +131,9 @@ BOTS_CFG: list[AgentCfg] = [
             geography="Санкт-Петербург, Ленинградская область + граничащие области (Карелия, Новгородская, Псковская и Вологодская области)",
             office_address="метро Технологический институт, Измайловский проспект, д.7",
             website="https://вологодскоезодчество.рф",
+            mcp_file_name="products-spb.json",
+            mcp_server="https://ii.mbk-chat.ru/mcp-spb",
+            mcp_lable="VZ_Catalog_SPB",
         ),
         transports=[
             WAConfig(
@@ -185,6 +188,9 @@ BOTS_CFG: list[AgentCfg] = [
             geography="Москва и Московская область + граничащие области (Тверская, Ярославская, Владимирская, Рязанская, Тульская, Калужская, Смоленская)",
             office_address="Дмитровское шоссе, 81",
             website="https://москва.вологодскоезодчество.рф",
+            mcp_file_name="products-msk.json",
+            mcp_server="https://ii.mbk-chat.ru/mcp-msk",
+            mcp_lable="VZ_Catalog_MSK",
         ),
         transports=[
             WAConfig(
@@ -231,6 +237,9 @@ BOTS_CFG: list[AgentCfg] = [
             geography="Москва и Московская область + граничащие области (Тверская, Ярославская, Владимирская, Рязанская, Тульская, Калужская, Смоленская)",
             office_address="Дмитровское шоссе, 81",
             website="https://москва.вологодскоезодчество.рф",
+            mcp_file_name="products-msk.json",
+            mcp_server="https://ii.mbk-chat.ru/mcp-msk",
+            mcp_lable="VZ_Catalog_MSK",
         ),
         transports=[
             TGConfig(
@@ -269,6 +278,9 @@ BOTS_CFG: list[AgentCfg] = [
             geography="Москва и Московская область + граничащие области (Тверская, Ярославская, Владимирская, Рязанская, Тульская, Калужская, Смоленская)",
             office_address="Дмитровское шоссе, 81",
             website="https://москва.вологодскоезодчество.рф",
+            mcp_file_name="products-msk.json",
+            mcp_server="https://ii.mbk-chat.ru/mcp-msk",
+            mcp_lable="VZ_Catalog_MSK",
         ),
         transports=[
             WAConfig(

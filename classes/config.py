@@ -79,6 +79,9 @@ class OpenAIConfig(BaseModel):
     geography: str
     office_address: str
     website: str
+    mcp_file_name: str
+    mcp_server: str
+    mcp_lable: str
 
 Transport = Annotated[Union[WAConfig, TGConfig], Field(discriminator="kind")]
 
