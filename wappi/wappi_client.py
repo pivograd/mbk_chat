@@ -502,12 +502,11 @@ class WappiClient:
         while True:
             payload = await self.get_task(task_id)
 
-            top_status = (payload.get("status") or "").lower()
             resp_status = (
-                    ((payload.get("task") or {}).get("response") or {}).get("status") or ""
+                    ((payload.get("task") or {}).get("response") or {}).get("delivery_status") or ""
             ).lower()
 
-            status = top_status or resp_status
+            status = resp_status
             if status in success_statuses:
                 await send_dev_telegram_log(f'[wait_task_done]\npayload: {payload}', 'DEV')
                 return payload
