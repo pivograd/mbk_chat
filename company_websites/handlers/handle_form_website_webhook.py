@@ -62,8 +62,8 @@ async def handle_form_website_webhook(request):
                 await wappi_client.get_or_create_contact(phone, name)
 
         await safe_send_to_chatwoot(phone, name, message, transport_cfg.chatwoot, comment=comment)
-        return web.json_response({"status": "ok"})
+        return web.Response(text="Отправили сообщение", status=200)
 
     except Exception as e:
         await send_dev_telegram_log(f'[handle_form_website_webhook]\nКритическая ошибка\nDATA: {data}\nERROR: {e}', 'ERROR')
-        return web.json_response({"status": "error"})
+        return web.Response(text='Серверная ошибка', status=500)
