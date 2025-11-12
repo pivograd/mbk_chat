@@ -490,8 +490,6 @@ class WappiClient:
             task_id: str,
             interval_sec: float = 5.0,
             timeout_sec: float = 600.0,
-            success_statuses: tuple[str, ...] = ("delivered",),
-            error_statuses: tuple[str, ...] = ("error", "undelivered", "temporary ban"),
     ) -> Dict[str, Any]:
         """
         Раз в interval_sec опрашивает /tapi/task/get до статуса из success_statuses или ошибки/таймаута.
@@ -502,19 +500,14 @@ class WappiClient:
         while True:
             payload = await self.get_task(task_id)
 
-            resp_status = (
-                    ((payload.get("task") or {}).get("response") or {}).get("delivery_status") or ""
-            ).lower()
+            response = payload.get('task', {}).get('response')
 
-            status = resp_status
-            if status in success_statuses:
-                await send_dev_telegram_log(f'[wait_task_done]\npayload: {payload}', 'DEV')
-                return payload
-
-            if status in error_statuses:
-                raise WappiError(f"Task {task_id} finished with error status: {status}", "ERROR")
+            if response:
+                delivery_status = response.get('delivery_status')
+                if delivery_status == 'delivered':
+                    return payload
 
             if time.monotonic() - started >= timeout_sec:
-                raise WappiError(f"Timeout waiting task {task_id}. Last status: {status or 'unknown'}")
+                raise WappiError(f"Timeout waiting task {task_id}.")
 
             await asyncio.sleep(interval_sec)
