@@ -1,4 +1,6 @@
+import asyncio
 import base64
+import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 import re
 from urllib.parse import urlparse, quote, unquote
@@ -295,28 +297,44 @@ class WappiClient:
         Разбивает сообщение по ссылкам и отправляет частями
         """
         message = message or ""
-
         recipient = normalize_phone(phone).lstrip("+")
 
         for part in split_message_by_links(message):
             txt = part.lstrip(".,!? \t;:-").strip()
             if len(txt) < 2:
                 continue
+
             if re.match(FILE_LINK_REGEX, txt, re.IGNORECASE):
                 try:
-                    if txt.endswith(".pdf"):
-                        file_name = self.extract_file_name(txt)
-                        await self.send_document_by_url_via_b64_sync(recipient, txt, file_name=file_name)
-                    else:
-                        await self.send_document_by_url_via_b64_sync(recipient, txt)
+                    file_name = self.extract_file_name(txt) if txt.endswith(".pdf") else None
+                    resp = await self.send_media_by_url(
+                        recipient=recipient,
+                        url=txt,
+                        caption=None,
+                        file_name=file_name,
+                    )
+                    if not isinstance(resp, dict):
+                        raise WappiError(f"Async send returned non-JSON: {resp!r}")
+
+                    task_id = self._extract_task_id(resp)
+                    if not task_id:
+                        raise WappiError(f"No task_id in async send response: {resp}")
+
+                    await self.wait_task_done(task_id, interval_sec=5.0)
 
                 except Exception as e:
-                    await send_dev_telegram_log(f'[WappiClient.send_split_message]\nОшибка при отправки изображения: {txt}\nerror: {e}', 'ERROR')
+                    await send_dev_telegram_log(
+                        f'[WappiClient.send_split_message]\nОшибка при отправке файла: {txt}\nerror: {e}',
+                        'ERROR'
+                    )
             else:
                 try:
                     await self.send_message(recipient, txt)
                 except Exception as e:
-                    await send_dev_telegram_log(f'[WappiClient.send_split_message]\nОшибка при отправке сообщения: {txt}\nerror: {e}', 'ERROR')
+                    await send_dev_telegram_log(
+                        f'[WappiClient.send_split_message]\nОшибка при отправке текста: {txt}\nerror: {e}',
+                        'ERROR'
+                    )
 
     @staticmethod
     def extract_file_name(u: str) -> str:
@@ -325,6 +343,21 @@ class WappiClient:
         raw_name = path.rsplit("/", 1)[-1] or "file.pdf"
         file_name = unquote(raw_name)
         return file_name
+
+    @staticmethod
+    def _extract_task_id(resp: Dict[str, Any]) -> Optional[str]:
+        for key in ("task_id", "id", "queue_id", "job_id"):
+            val = resp.get(key)
+            if isinstance(val, str) and val.strip():
+                return val
+
+        task = resp.get("task")
+        if isinstance(task, dict):
+            for key in ("task_id", "id", "queue_id", "job_id"):
+                val = task.get(key)
+                if isinstance(val, str) and val.strip():
+                    return val
+        return None
 
     async def send_contact(self, recipient: str, phone: str, name: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -436,3 +469,51 @@ class WappiClient:
             caption=caption,
             file_name=file_name or self.extract_file_name(url),
         )
+
+    async def get_task(self, task_id: str) -> Dict[str, Any]:
+        """
+        GET /tapi/task/get — данные по конкретной задаче.
+        """
+        if not task_id:
+            raise ValueError("task_id must not be empty")
+
+        return await self._request(
+            "GET",
+            "/task/get",
+            params={"task_id": task_id},
+            expected_status=200,
+            dont_raise=False,
+        )
+
+    async def wait_task_done(
+            self,
+            task_id: str,
+            interval_sec: float = 5.0,
+            timeout_sec: float = 600.0,
+            success_statuses: tuple[str, ...] = ("done", "delivered", "read"),
+            error_statuses: tuple[str, ...] = ("error", "undelivered", "temporary ban"),
+    ) -> Dict[str, Any]:
+        """
+        Раз в interval_sec опрашивает /tapi/task/get до статуса из success_statuses или ошибки/таймаута.
+        Возвращает финальный payload задачи (для логирования/аналитики).
+        """
+        started = time.monotonic()
+
+        while True:
+            payload = await self.get_task(task_id)
+
+            top_status = (payload.get("status") or "").lower()
+            resp_status = (
+                    ((payload.get("task") or {}).get("response") or {}).get("status") or ""
+            ).lower()
+
+            status = top_status or resp_status
+            if status in success_statuses:
+                return payload
+            if status in error_statuses:
+                raise WappiError(f"Task {task_id} finished with error status: {status}")
+
+            if time.monotonic() - started >= timeout_sec:
+                raise WappiError(f"Timeout waiting task {task_id}. Last status: {status or 'unknown'}")
+
+            await asyncio.sleep(interval_sec)
