@@ -306,9 +306,9 @@ class WappiClient:
                 try:
                     if txt.endswith(".pdf"):
                         file_name = self.extract_file_name(txt)
-                        await self.send_media_by_url_sync(recipient, txt, file_name=file_name)
+                        await self.send_document_by_url_via_b64_sync(recipient, txt, file_name=file_name)
                     else:
-                        await self.send_media_by_url_sync(recipient, txt)
+                        await self.send_document_by_url_via_b64_sync(recipient, txt)
 
                 except Exception as e:
                     await send_dev_telegram_log(f'[WappiClient.send_split_message]\nОшибка при отправки изображения: {txt}\nerror: {e}', 'ERROR')
@@ -319,7 +319,7 @@ class WappiClient:
                     await send_dev_telegram_log(f'[WappiClient.send_split_message]\nОшибка при отправке сообщения: {txt}\nerror: {e}', 'ERROR')
 
     @staticmethod
-    def extract_file_name(u: str) -> tuple[str, str]:
+    def extract_file_name(u: str) -> str:
         p = urlparse(u)
         path = quote(p.path, safe="/%._-")
         raw_name = path.rsplit("/", 1)[-1] or "file.pdf"
@@ -379,3 +379,60 @@ class WappiClient:
         """
         data = await self.get_instance_settings()
         return data.get('phone')
+
+    async def send_document_b64_sync(self, recipient: str, b64_file: str, file_name = None, caption = None):
+        """
+        POST /tapi/sync/message/document/send
+        """
+        if not recipient:
+            raise ValueError("recipient must not be empty")
+        if not b64_file:
+            raise ValueError("b64_file must not be empty")
+
+        m = re.match(r"^data:[^;]+;base64,(.*)$", b64_file, flags=re.IGNORECASE | re.DOTALL)
+        if m:
+            b64_file = m.group(1).strip()
+
+        payload: Dict[str, Any] = {
+            "recipient": str(recipient),
+            "b64_file": b64_file,
+        }
+
+        if caption:
+            payload["caption"] = caption
+
+        if file_name:
+            payload["file_name"] = file_name
+
+        try:
+            return await self._request(
+                "POST",
+                "/sync/message/document/send",
+                json=payload,
+                expected_status=(200, 201, 202),
+                dont_raise=False,
+            )
+        except Exception as e:
+            await send_dev_telegram_log(
+                f"[WappiClient.send_file_b64_sync]\nОшибка при синхронной отправке документа!\n{e}",
+                "ERROR",
+            )
+            raise WappiError(e)
+
+    async def send_document_by_url_via_b64_sync(
+            self,
+            recipient: str,
+            url: str,
+            caption: Optional[str] = None,
+            file_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        cкачивает файл, кодирует и отправить как документ в base64.
+        """
+        b64 = await self.download_as_base64(url)
+        return await self.send_document_b64_sync(
+            recipient=recipient,
+            b64_file=b64,
+            caption=caption,
+            file_name=file_name or self.extract_file_name(url),
+        )
