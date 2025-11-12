@@ -15,7 +15,7 @@ async def handle_site_comeback(request):
         if not domain or not phone:
             return web.Response(text="❌ Не указан телефон или домен", status=400)
 
-        await send_dev_telegram_log(f'[handle_site_comeback]\ndata: {data}')
+        await send_dev_telegram_log(f'[handle_site_comeback]\ndata: {data}', 'DEV')
         return web.Response(text="Повторное посещение зафиксированно!", status=200)
     except Exception as e:
         await send_dev_telegram_log(f'[handle_site_comeback]\nКритическая ошибка\nDATA: {data}\nERROR: {e}',
