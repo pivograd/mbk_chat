@@ -94,8 +94,7 @@ async def analyze_document(document_url: str, model: str = MODEL_MAIN) -> str:
 
     # — подготовка путей сохранения
     base_name = _slug(Path(document_url).name or "document")
-    stamp = _ts()
-    base_dir = ROOT_SAVE_DIR / f"{base_name}__{stamp}"
+    base_dir = ROOT_SAVE_DIR / f"{base_name}"
     original_path = base_dir / f"{base_name}{ext or ''}"
     html_path = base_dir / f"{base_name}.html"
     pdf_path = base_dir / f"{base_name}.pdf"
