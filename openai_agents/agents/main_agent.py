@@ -1,4 +1,5 @@
-from agents import Agent, HostedMCPTool
+from agents import Agent, HostedMCPTool, ModelSettings
+from openai.types import Reasoning
 
 from classes.config import OpenAIConfig
 from openai_agents.tools.ai_send_agent_contact_card import ai_send_agent_contact_card
@@ -39,5 +40,10 @@ def build_main_agent(cfg: OpenAIConfig, model: str = MODEL_MAIN) -> Agent:
         tools=[
             ai_send_agent_contact_card,
             mcp,
-        ]
+        ],
+        model_settings=ModelSettings(
+            store=True,
+            reasoning=Reasoning(
+                effort="medium",
+            ))
     )

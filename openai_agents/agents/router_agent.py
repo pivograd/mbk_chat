@@ -1,6 +1,7 @@
-from agents import Agent, handoff
+from agents import Agent, handoff, ModelSettings
 from agents.extensions import handoff_filters
 from agents.extensions.handoff_prompt import prompt_with_handoff_instructions
+from openai.types import Reasoning
 
 from classes.config import OpenAIConfig
 from openai_agents.agents.design_agent import build_design_agent
@@ -40,4 +41,9 @@ def build_new_router_agent(cfg: OpenAIConfig) -> Agent:
             handoff(warmup_agent, input_filter=handoff_filters.remove_all_tools),
         ],
         instructions=prompt_with_handoff_instructions(router_prompt),
+        model_settings=ModelSettings(
+            store=True,
+            reasoning=Reasoning(
+                effort="medium",
+            ))
     )

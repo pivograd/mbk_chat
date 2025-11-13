@@ -1,5 +1,6 @@
-from agents import Agent, HostedMCPTool
+from agents import Agent, HostedMCPTool, ModelSettings
 from agents.extensions.handoff_prompt import prompt_with_handoff_instructions
+from openai.types import Reasoning
 
 from classes.config import OpenAIConfig
 from openai_agents.utils.insert_main_info_in_prompt import insert_main_info_in_prompt
@@ -36,4 +37,9 @@ def build_manager_agent(cfg: OpenAIConfig, model: str = MODEL_MINI) -> Agent:
         tools=[
             mcp
         ],
+        model_settings=ModelSettings(
+            store=True,
+            reasoning=Reasoning(
+                effort="medium",
+            ))
     )
