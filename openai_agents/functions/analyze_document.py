@@ -1,7 +1,10 @@
 import base64
 import os
+import re
 from pathlib import Path
+from datetime import datetime
 
+import aiofiles
 from openai import AsyncOpenAI
 
 from settings import OPENAI_TOKEN, MODEL_MAIN
@@ -53,17 +56,58 @@ DOCUMENT_PROMPT = """
 (4) Ровно 3–4 абзаца, без списков и служебных фраз?
 """.strip()
 
+ROOT_SAVE_DIR = Path("./_saved_docs").resolve()
+
+def _slug(s: str) -> str:
+    s = s.strip().lower()
+    s = re.sub(r"[^\w\-\.]+", "-", s, flags=re.U)
+    s = re.sub(r"-{2,}", "-", s)
+    return s.strip("-") or "document"
+
+def _ts() -> str:
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+async def _ensure_dir(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+
+async def _async_write_bytes(path: Path, data: bytes) -> None:
+    await _ensure_dir(path.parent)
+    async with aiofiles.open(path, "wb") as f:
+        await f.write(data)
+
+async def _async_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
+    await _ensure_dir(path.parent)
+    async with aiofiles.open(path, "w", encoding=encoding) as f:
+        await f.write(text)
+
 async def analyze_document(document_url: str, model: str = MODEL_MAIN) -> str:
     """
-    1) Скачивает файл по URL (aiohttp).
+    1) Скачивает файл по URL (aiohttp внутри download_bytes).
     2) Если PDF — сразу отправляем base64 в OpenAI.
        Если DOCX/XLSX — конвертируем: DOCX→HTML через mammoth, XLSX→HTML через pandas/openpyxl.
     3) HTML → PDF (xhtml2pdf), отправляем base64 в OpenAI Responses.
-    4) Возвращаем текст саммари.
+    4) Перед отправкой сохраняем артефакты в ./_saved_docs/: исходник, HTML (если был), итоговый PDF.
+    5) Возвращаем текст саммари.
     """
-    ext = Path(document_url).suffix
+    ext = Path(document_url).suffix.lower()
     raw = await download_bytes(document_url)
 
+    # — подготовка путей сохранения
+    base_name = _slug(Path(document_url).name or "document")
+    stamp = _ts()
+    base_dir = ROOT_SAVE_DIR / f"{base_name}__{stamp}"
+    original_path = base_dir / f"{base_name}{ext or ''}"
+    html_path = base_dir / f"{base_name}.html"
+    pdf_path = base_dir / f"{base_name}.pdf"
+
+    # — сохраняем исходник сразу
+    try:
+        await _async_write_bytes(original_path, raw)
+    except Exception as e:
+        await send_dev_telegram_log(f"[analyze_document] Не удалось сохранить оригинал: {original_path} -> {e}")
+
+    # — конвертация к PDF
+    html: str | None = None
     if ext == ".pdf":
         pdf_bytes = raw
     elif ext in (".docx",):
@@ -73,9 +117,7 @@ async def analyze_document(document_url: str, model: str = MODEL_MAIN) -> str:
         html = xlsx_to_html(raw, include_formulas=True, include_comments=True)
         pdf_bytes = html_to_pdf_bytes(html, title=os.path.basename(document_url) or "XLSX")
     else:
-        # Если формат неизвестен, попытаемся определить как DOCX/XLSX по сигнатурам.
-        # DOCX/XLSX — это zip. Можно эвристикой: наличие [Content_Types].xml внутри.
-        # Для простоты — пробуем DOCX, затем XLSX, иначе — кидаем исключение.
+        # Попытка эвристик: DOCX → затем XLSX
         tried = []
         try:
             html = docx_to_html(raw)
@@ -87,17 +129,43 @@ async def analyze_document(document_url: str, model: str = MODEL_MAIN) -> str:
                 pdf_bytes = html_to_pdf_bytes(html, title="Workbook")
             except Exception as e2:
                 tried.append(f"XLSX:{e2}")
-                await send_dev_telegram_log(f'[]')
+                await send_dev_telegram_log(f"[analyze_document] Неподдерживаемый формат. Попытки: {', '.join(tried)}")
                 raise RuntimeError(f"Неподдерживаемый формат. Попытки: {', '.join(tried)}")
 
+    # — если был HTML — сохраним для отладки
+    if html is not None:
+        try:
+            await _async_write_text(html_path, html)
+        except Exception as e:
+            await send_dev_telegram_log(f"[analyze_document] Не удалось сохранить HTML: {html_path} -> {e}")
+
+    # — сохраняем итоговый PDF (всегда)
+    try:
+        await _async_write_bytes(pdf_path, pdf_bytes)
+    except Exception as e:
+        await send_dev_telegram_log(f"[analyze_document] Не удалось сохранить PDF: {pdf_path} -> {e}")
+
+    await send_dev_telegram_log(
+        "[analyze_document] Сохранено:\n"
+        f"— Оригинал: {original_path}\n"
+        f"— HTML: {html_path if html is not None else '—'}\n"
+        f"— PDF: {pdf_path}"
+    )
+
+    # — отправка в OpenAI
     base64_string = base64.b64encode(pdf_bytes).decode("ascii")
     client = AsyncOpenAI(api_key=OPENAI_TOKEN)
-    content_items = []
-    content_items.append({"type": "input_file", "filename": "somedoc.pdf", "file_data": f"data:application/pdf;base64,{base64_string}"})
+    content_items = [
+        {
+            "type": "input_file",
+            "filename": pdf_path.name,
+            "file_data": f"data:application/pdf;base64,{base64_string}",
+        }
+    ]
 
     resp = await client.responses.create(
         model=model,
         instructions=DOCUMENT_PROMPT,
-        input=[{"role": "user", "content": content_items}]
+        input=[{"role": "user", "content": content_items}],
     )
     return resp.output_text
