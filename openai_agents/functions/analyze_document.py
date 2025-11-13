@@ -1,10 +1,8 @@
 import base64
 import os
-import re
-from pathlib import Path
-from datetime import datetime
 
-import aiofiles
+from pathlib import Path
+
 from openai import AsyncOpenAI
 
 from settings import OPENAI_TOKEN, MODEL_MAIN

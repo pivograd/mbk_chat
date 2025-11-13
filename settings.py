@@ -209,6 +209,14 @@ BOTS_CFG: list[AgentCfg] = [
                     assignee_id='13',
                 )
             ),
+            WAConfig(
+                instance_id=os.getenv('PAVEL3_GREEN_API_INSTANCE_ID'),
+                api_token=os.getenv('PAVEL3_GREEN_API_TOKEN'),
+                chatwoot=ChatwootBinding(
+                    inbox_id=19,
+                    assignee_id='13',
+                )
+            ),
             TGConfig(
                 api_token=os.getenv('PAVEL_WAPPI_API_TOKEN'),
                 instance_id=os.getenv('PAVEL_WAPPI_INSTANCE_ID'),
