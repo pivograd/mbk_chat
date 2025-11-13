@@ -3,7 +3,7 @@ from aiohttp import web
 from chatwoot_api.functions.send_agent_contact import send_agent_contact_card
 from chatwoot_api.functions.send_manager_contact import send_manager_contact_card
 from green_api.handlers.outbound_green_api import outbound_green_api
-from wappi.handlers.outound_wappi import outbound_wappi
+from wappi.handlers.outbound_wappi import outbound_wappi
 
 
 async def handle_from_chatwoot(request, agent_code, kind, inbox_id):

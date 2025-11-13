@@ -505,7 +505,7 @@ class WappiClient:
 
             if response:
                 delivery_status = response.get('delivery_status')
-                if delivery_status == 'delivered':
+                if delivery_status in ['delivered', 'read']:
                     await send_dev_telegram_log(f'[wait_task_done]\nЗакончили ожидание доставки файла в ТГ(WAPPI)\ntime: {time.monotonic() - started}', 'DEV')
                     return payload
 
