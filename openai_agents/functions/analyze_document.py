@@ -153,7 +153,7 @@ async def analyze_document(document_url: str, model: str = MODEL_MAIN) -> str:
     )
 
     # — отправка в OpenAI
-    base64_string = base64.b64encode(pdf_bytes).decode("ascii")
+    base64_string = base64.b64encode(pdf_bytes).decode("utf-8")
     client = AsyncOpenAI(api_key=OPENAI_TOKEN)
     content_items = [
         {
