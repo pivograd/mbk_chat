@@ -1,8 +1,17 @@
+import base64
+import os
+from pathlib import Path
+
 from openai import AsyncOpenAI
 
 from settings import OPENAI_TOKEN, MODEL_MAIN
+from telegram.send_log import send_dev_telegram_log
+from utils.docx_to_html import docx_to_html
+from utils.download_bytes import download_bytes
+from utils.html_to_pdf_bytes import html_to_pdf_bytes
+from utils.xlsx_to_html import xlsx_to_html
 
-document_prompt = """
+DOCUMENT_PROMPT = """
 Ты — эксперт по сжатому изложению документов. Твоя задача — внимательно ПРОЧИТАТЬ ВЕСЬ документ и выдать краткое описание на русском языке.
 
 Цель ответа: 3–4 абзаца связного текста (без пунктов/списков), передающих суть документа.
@@ -45,21 +54,51 @@ document_prompt = """
 (4) Ровно 3–4 абзаца, без списков и служебных фраз?
 """.strip()
 
-async def analyze_document(
-    document_url: str,
-    model: str = MODEL_MAIN) -> str:
+async def analyze_document(document_url: str, model: str = MODEL_MAIN) -> str:
     """
-    Анализирует изображение и возвращает русскоязычное описание.
-    Можно передать либо публичный image_url, либо локальный image_path.
+    1) Скачивает файл по URL (aiohttp).
+    2) Если PDF — сразу отправляем base64 в OpenAI.
+       Если DOCX/XLSX — конвертируем: DOCX→HTML через mammoth, XLSX→HTML через pandas/openpyxl.
+    3) HTML → PDF (xhtml2pdf), отправляем base64 в OpenAI Responses.
+    4) Возвращаем текст саммари.
     """
-    client = AsyncOpenAI(api_key=OPENAI_TOKEN) # , base_url='http://150.241.122.84:3333/v1/'
-    content_items =[]
-    content_items.append({"type": "input_file", "file_url": document_url})
+    ext = Path(document_url).suffix
+    raw = await download_bytes(document_url)
+
+    if ext == ".pdf":
+        pdf_bytes = raw
+    elif ext in (".docx",):
+        html = docx_to_html(raw)
+        pdf_bytes = html_to_pdf_bytes(html, title=os.path.basename(document_url) or "DOCX")
+    elif ext in (".xlsx", ".xls"):
+        html = xlsx_to_html(raw, include_formulas=True, include_comments=True)
+        pdf_bytes = html_to_pdf_bytes(html, title=os.path.basename(document_url) or "XLSX")
+    else:
+        # Если формат неизвестен, попытаемся определить как DOCX/XLSX по сигнатурам.
+        # DOCX/XLSX — это zip. Можно эвристикой: наличие [Content_Types].xml внутри.
+        # Для простоты — пробуем DOCX, затем XLSX, иначе — кидаем исключение.
+        tried = []
+        try:
+            html = docx_to_html(raw)
+            pdf_bytes = html_to_pdf_bytes(html, title="Document")
+        except Exception as e1:
+            tried.append(f"DOCX:{e1}")
+            try:
+                html = xlsx_to_html(raw, include_formulas=True, include_comments=True)
+                pdf_bytes = html_to_pdf_bytes(html, title="Workbook")
+            except Exception as e2:
+                tried.append(f"XLSX:{e2}")
+                await send_dev_telegram_log(f'[]')
+                raise RuntimeError(f"Неподдерживаемый формат. Попытки: {', '.join(tried)}")
+
+    base64_string = base64.b64encode(pdf_bytes).decode("ascii")
+    client = AsyncOpenAI(api_key=OPENAI_TOKEN)
+    content_items = []
+    content_items.append({"type": "input_file", "filename": "somedoc.pdf", "file_data": f"data:application/pdf;base64,{base64_string}"})
 
     resp = await client.responses.create(
         model=model,
-        instructions=document_prompt,
+        instructions=DOCUMENT_PROMPT,
         input=[{"role": "user", "content": content_items}]
     )
-
     return resp.output_text
