@@ -496,6 +496,7 @@ class WappiClient:
         Возвращает финальный payload задачи (для логирования/аналитики).
         """
         started = time.monotonic()
+        await send_dev_telegram_log(f'[wait_task_done]\nНачали ожидание доставки файла в ТГ(WAPPI)', 'DEV')
 
         while True:
             payload = await self.get_task(task_id)
@@ -505,9 +506,11 @@ class WappiClient:
             if response:
                 delivery_status = response.get('delivery_status')
                 if delivery_status == 'delivered':
+                    await send_dev_telegram_log(f'[wait_task_done]\nЗакончили ожидание доставки файла в ТГ(WAPPI)\ntime: {time.monotonic() - started}', 'DEV')
                     return payload
 
             if time.monotonic() - started >= timeout_sec:
+                await send_dev_telegram_log(f'[wait_task_done]\nНедождались доставки файла в ТГ(WAPPI)\ntime: {time.monotonic() - started}\n task_id: {task_id}', 'ERROR')
                 raise WappiError(f"Timeout waiting task {task_id}.")
-
+            await send_dev_telegram_log(f'[wait_task_done]\nОжидаем доставку файла в ТГ(WAPPI)\ntime: {time.monotonic() - started}\n task_id: {task_id}','DEV')
             await asyncio.sleep(interval_sec)
