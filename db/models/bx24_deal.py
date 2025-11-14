@@ -263,8 +263,9 @@ class Bx24Deal(Base):
             session.add(obj)
             try:
                 await session.flush()
-            except IntegrityError:
-                pass
+            except IntegrityError as e:
+                tb = traceback.format_exc()
+                await send_dev_telegram_log(f'[Bx24Deal.get_or_create]\nОшибка!\n{tb}', 'ERROR')
 
         return await session.scalar(stmt)
 
