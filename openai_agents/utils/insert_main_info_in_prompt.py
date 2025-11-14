@@ -9,7 +9,7 @@ def insert_main_info_in_prompt(prompt: str, cfg: OpenAIConfig) -> str:
     Подставляет в промт основную информацию на место <<MAIN_INFO>>
     """
     main_block = read_txt_file(MAIN_BLOCK_PATH)
-    catalogs = read_txt_file(cfg.catalogs_path)
+    catalogs = read_txt_file(cfg.catalogs_file)
 
     main_block = main_block.replace( '<<CATALOGS_BLOCK>>', catalogs)
     main_block = main_block.replace('<<PRICE_COMPLECTATION>>', cfg.price_complectation)
