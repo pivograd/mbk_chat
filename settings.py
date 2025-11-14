@@ -87,7 +87,7 @@ DATABASE_URL = f'postgresql+asyncpg://{DATABASE_USER}:{DATABASE_PASSWORD}@127.0.
 OPENAI_TOKEN = os.getenv('OPENAI_TOKEN')
 from agents import set_default_openai_key
 set_default_openai_key(OPENAI_TOKEN)
-MODEL_MAIN = "gpt-5"
+MODEL_MAIN = "gpt-5.1"
 MODEL_MINI = "gpt-5-mini"
 TRANSCRIBE_MODEL = "gpt-4o-transcribe"
 
