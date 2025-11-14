@@ -1,5 +1,6 @@
 from classes.config import OpenAIConfig
 from settings import MAIN_BLOCK_PATH
+from utils.insert_txt_in_block import insert_txt_in_block
 from utils.read_txt_file import read_txt_file
 
 
@@ -18,5 +19,6 @@ def insert_main_info_in_prompt(prompt: str, cfg: OpenAIConfig) -> str:
     main_block = main_block.replace('<<GEOGRAPHY>>', cfg.geography)
     main_block = main_block.replace('<<OFFICE_ADDRESS>>', cfg.office_address)
     main_block = main_block.replace('<<WEBSITE>>', cfg.website)
+    main_block = insert_txt_in_block(main_block, cfg.catalogs_file, '<<CATALOGS_BLOCK>>')
 
     return prompt.replace('<<MAIN_INFO>>', main_block)

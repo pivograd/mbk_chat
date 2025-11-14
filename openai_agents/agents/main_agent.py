@@ -8,6 +8,7 @@ from settings import MODEL_MAIN
 from utils.insert_txt_in_block import insert_txt_in_block
 from agents.extensions.handoff_prompt import prompt_with_handoff_instructions
 
+from utils.read_txt_file import read_txt_file
 
 
 def build_main_agent(cfg: OpenAIConfig, model: str = MODEL_MAIN) -> Agent:
@@ -27,7 +28,7 @@ def build_main_agent(cfg: OpenAIConfig, model: str = MODEL_MAIN) -> Agent:
     })
 
 
-    main_prompt = insert_txt_in_block(cfg.main_prompt_file, cfg.catalogs_file, '<<CATALOGS_BLOCK>>')
+    main_prompt = read_txt_file(cfg.main_prompt_file)
     main_prompt = insert_main_info_in_prompt(main_prompt, cfg)
 
     return Agent(

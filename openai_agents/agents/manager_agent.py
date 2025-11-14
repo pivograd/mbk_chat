@@ -3,6 +3,7 @@ from agents.extensions.handoff_prompt import prompt_with_handoff_instructions
 from openai.types import Reasoning
 
 from classes.config import OpenAIConfig
+from openai_agents.tools.ai_send_agent_contact_card import ai_send_agent_contact_card
 from openai_agents.utils.insert_main_info_in_prompt import insert_main_info_in_prompt
 from settings import MODEL_MINI, MANAGER_PROMPT_PATH
 from utils.read_txt_file import read_txt_file
@@ -35,6 +36,7 @@ def build_manager_agent(cfg: OpenAIConfig, model: str = MODEL_MINI) -> Agent:
         ),
         instructions=prompt_with_handoff_instructions(manager_prompt),
         tools=[
+            ai_send_agent_contact_card,
             mcp
         ],
         model_settings=ModelSettings(
