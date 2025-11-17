@@ -25,7 +25,6 @@ async def inbound_wappi(request, agent_code, inbox_id):
     """
     try:
         data = await request.json()
-        await send_dev_telegram_log(f'[inbound_wappi]\n\n {data}', 'DEV')
         messages = data.get("messages")
 
         if not messages or not isinstance(messages, list):
@@ -64,6 +63,10 @@ async def inbound_wappi(request, agent_code, inbox_id):
             document_msg = f'[Summary прикрепленного документа]:\n\n{document_summary}'
             caption = message_data.get("caption")
             message_text = f'[СООБЩЕНИЕ С ДОКУМЕНТОМ]\n\nТекст сообщения:\n{caption}\nСсылка на документ: {download_url}\n\n{document_msg}'
+
+        elif message_data.get('type') == 'reaction':
+            # скип реакции
+            return web.Response(text="SKIP, не реагируем на реакции", status=200)
 
 
         tg_config = INBOX_TO_TRANSPORT[inbox_id]
