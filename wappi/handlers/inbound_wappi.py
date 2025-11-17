@@ -25,6 +25,7 @@ async def inbound_wappi(request, agent_code, inbox_id):
     """
     try:
         data = await request.json()
+        await send_dev_telegram_log(f'[inbound_wappi]\n\n {data}', 'DEV')
         messages = data.get("messages")
 
         if not messages or not isinstance(messages, list):
