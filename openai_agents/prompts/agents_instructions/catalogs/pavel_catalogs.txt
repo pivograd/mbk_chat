@@ -1,13 +1,13 @@
 КАТАЛОГИ (разрешено отправлять только эти; ссылку — только в неизменном виде, отдельной строкой; перед ссылкой — строка с названием):
 
 Каталог одноэтажных домов из клееного бруса
-http://ii.mbk-chat.ru/Katalog_MSK_VZ-I_LETO_25_1_etaj.pdf
+https://api.mbk-chat.ru/files/Katalog_msk_brus_1_etazh.pdf
 
 Каталог двухэтажных домов из клееного бруса
-http://ii.mbk-chat.ru/Katalog_MSK_VZ-II_LETO_25_2_etaj.pdf
+https://api.mbk-chat.ru/files/Katalog_msk_brus_1_etazh.pdf
 
 Каталог домов из бревна
-http://ii.mbk-chat.ru/Katalog_MSK_Brevno_2025.pdf
+https://api.mbk-chat.ru/files/Katalog_msk_brevno.pdf
 
-Каталог домов из газобетона и керамических блоков
-http://ii.mbk-chat.ru/Katalog_MSK_gazobeton.pdf
+Каталог домов из теплой керамики
+https://api.mbk-chat.ru/files/Katalog_msk_teplaya_keramika.pdf
