@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from agents import Runner
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatwoot_api.chatwoot_client import ChatwootClient
 from db.models.chatwoot_conversation import ChatwootConversation
@@ -25,6 +26,7 @@ PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 class Ctx:
     agent_code: str
     conversation_id: int
+    db_session: AsyncSession
 
 @lru_cache(maxsize=32)
 def get_router_for_code(agent_code: str):
@@ -148,7 +150,7 @@ class SdkAgentsService:
                 result = await Runner.run(
                     router,
                     input=history,
-                    context=Ctx(agent_code=self.agent_code, conversation_id=conv_id), # должно быть доступно в ctx.
+                    context=Ctx(agent_code=self.agent_code, conversation_id=conv_id, db_session=session), # должно быть доступно в ctx.
                     max_turns=8,
                 )
                 t_end = time.perf_counter()

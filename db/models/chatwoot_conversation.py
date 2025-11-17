@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import UniqueConstraint, Integer, select
+from sqlalchemy import UniqueConstraint, Integer, select, Boolean
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -15,6 +15,7 @@ class ChatwootConversation(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     chatwoot_id: Mapped[int] = mapped_column(Integer, nullable=False)
     last_message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    agent_contact_sent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     # contact_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     # deal_id: Mapped[Optional[int]] = mapped_column(ForeignKey("bx_deal.id"), nullable=True)
 
