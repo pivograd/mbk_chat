@@ -138,6 +138,13 @@ class WappiClient:
             expected_status=200,
         )
 
+        if isinstance(resp, tuple):
+            status, body, headers = resp
+            if status == 404:
+                return None
+
+            raise WappiError(f"[get_contact] HTTP {status}: {body}")
+
         return resp.get("contact")
 
 
