@@ -58,8 +58,8 @@ class BxDealCwLink(Base):
             cls.bx_deal_id == deal_id,
         )
 
-        if agent_inboxes:
-            q = q.where(cls.cw_inbox_id.in_(agent_inboxes))
+        # if agent_inboxes:
+        #     q = q.where(cls.cw_inbox_id.in_(agent_inboxes))
 
         q = q.order_by(desc(cls.is_primary), desc(cls.created_at))
 
