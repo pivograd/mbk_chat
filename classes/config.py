@@ -82,6 +82,7 @@ class OpenAIConfig(BaseModel):
     mcp_file_name: str
     mcp_server: str
     mcp_lable: str
+    telephone_number: str
 
 Transport = Annotated[Union[WAConfig, TGConfig], Field(discriminator="kind")]
 
