@@ -21,5 +21,6 @@ def insert_main_info_in_prompt(prompt: str, cfg: OpenAIConfig) -> str:
     main_block = main_block.replace('<<GEOGRAPHY>>', cfg.geography)
     main_block = main_block.replace('<<OFFICE_ADDRESS>>', cfg.office_address)
     main_block = main_block.replace('<<WEBSITE>>', cfg.website)
+    main_block = main_block.replace('<<TELEPHONE NUMBER>>', cfg.telephone_number)
 
     return prompt.replace('<<MAIN_INFO>>', main_block)

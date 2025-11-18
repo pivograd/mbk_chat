@@ -134,6 +134,7 @@ BOTS_CFG: list[AgentCfg] = [
             mcp_file_name="products-spb.json",
             mcp_server="https://ii.mbk-chat.ru/mcp-spb",
             mcp_lable="VZ_Catalog_SPB",
+            telephone_number="+78122411934",
         ),
         transports=[
             WAConfig(
@@ -191,6 +192,7 @@ BOTS_CFG: list[AgentCfg] = [
             mcp_file_name="products-msk.json",
             mcp_server="https://ii.mbk-chat.ru/mcp-msk",
             mcp_lable="VZ_Catalog_MSK",
+            telephone_number="+74959759847",
         ),
         transports=[
             WAConfig(
@@ -248,6 +250,7 @@ BOTS_CFG: list[AgentCfg] = [
             mcp_file_name="products-msk.json",
             mcp_server="https://ii.mbk-chat.ru/mcp-msk",
             mcp_lable="VZ_Catalog_MSK",
+            telephone_number="+74959759847",
         ),
         transports=[
             TGConfig(
@@ -289,6 +292,7 @@ BOTS_CFG: list[AgentCfg] = [
             mcp_file_name="products-msk.json",
             mcp_server="https://ii.mbk-chat.ru/mcp-msk",
             mcp_lable="VZ_Catalog_MSK",
+            telephone_number="+74959759847",
         ),
         transports=[
             WAConfig(
