@@ -4,7 +4,7 @@
 https://api.mbk-chat.ru/files/Katalog_msk_brus_1_etazh.pdf
 
 Каталог двухэтажных домов из клееного бруса
-https://api.mbk-chat.ru/files/Katalog_msk_brus_1_etazh.pdf
+https://api.mbk-chat.ru/files/Katalog_msk_brus_2_etazh.pdf
 
 Каталог домов из бревна
 https://api.mbk-chat.ru/files/Katalog_msk_brevno.pdf
