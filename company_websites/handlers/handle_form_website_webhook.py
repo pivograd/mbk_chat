@@ -22,6 +22,9 @@ async def handle_form_website_webhook(request):
             await send_dev_telegram_log(f'[handle_form_website_webhook]\nНе указано имя агента!\ndata: {data}', 'WARNING')
             return web.Response(text="❌ Не указано имя агента", status=400)
 
+        if data.get('title') == 'Пусть назывется сделка Смета конкурентов':
+            return web.Response(text="На эту форму не реагируем", status=200)
+
         phone = re.sub(r'\D', '', data.get("phone", ""))
         domain = data.get("title", "").split(' - ')[-1]
         phone = normalize_phone(phone)
