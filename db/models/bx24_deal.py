@@ -501,3 +501,19 @@ class Bx24Deal(Base):
         await self.save_max_last_sync_comment_id(session, max_id)
 
         return True
+
+    @classmethod
+    async def get_stage_id(cls, session: AsyncSession, bx_id: int, bx_portal: str) -> Optional[str]:
+        """
+        Возвращает stage_id для сделки по bx_id и bx_portal.
+        Если сделки нет в БД — вернёт None.
+        """
+        stmt = (
+            select(cls.stage_id)
+            .where(
+                cls.bx_id == bx_id,
+                cls.bx_portal == bx_portal,
+            )
+            .limit(1)
+        )
+        return await session.scalar(stmt)

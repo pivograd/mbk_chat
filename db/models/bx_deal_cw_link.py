@@ -114,6 +114,22 @@ class BxDealCwLink(Base):
         )
         return True
 
+    @classmethod
+    async def get_deals_for_conversation(
+            cls,
+            session: AsyncSession,
+            portal: str,
+            conversation_id: int,
+    ) -> Sequence["BxDealCwLink"]:
+        q = select(cls).where(
+            cls.bx_portal == portal,
+            cls.cw_conversation_id == conversation_id,
+        )
+
+        q = q.order_by(desc(cls.is_primary), desc(cls.created_at))
+
+        return (await session.execute(q)).scalars().all()
+
 #TODO try except широкий в методах
 
 async def link_deal_with_conversation(

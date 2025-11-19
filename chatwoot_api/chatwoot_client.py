@@ -2,8 +2,10 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import aiohttp
+from openai import AsyncOpenAI
 
-from settings import CHATWOOT_API_TOKEN, CHATWOOT_HOST, CHATWOOT_ACCOUNT_ID
+from openai_agents.functions.write_warm_up_message import warm_up_prompt
+from settings import CHATWOOT_API_TOKEN, CHATWOOT_HOST, CHATWOOT_ACCOUNT_ID, OPENAI_TOKEN
 from telegram.send_log import send_dev_telegram_log
 from utils.check_message_for_markers import check_message_for_markers
 
@@ -621,3 +623,44 @@ class ChatwootClient:
             return None
 
         return resp.get('meta', {}).get('sender', {}).get('phone_number', '')
+
+
+    async def send_warmup_message(self, conversation_id: int):
+        """
+        Генерирует и отправляет прогревающее собщение
+        """
+        all_messages = await self.get_all_messages(conversation_id)
+
+        chat_history = []
+        for msg in all_messages:
+            role = "user" if msg.get("message_type") == 0 else "assistant"
+            content = (msg.get("content") or "").strip()
+            if not content:
+                continue
+
+            created_at = msg.get("created_at")
+            if created_at:
+                dt_str = datetime.fromtimestamp(created_at).strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                dt_str = "unknown"
+
+            if msg.get("private"):
+                chat_history.append({
+                    "role": "assistant",
+                    "content": f"[Внутренняя заметка, не транслируй клиенту дословно!] "
+                               f"(отправлено {dt_str}): {content}"})
+            else:
+                chat_history.append({"role": role, "content": f"(отправлено {dt_str}) {content}"})
+
+        openai_client = AsyncOpenAI(api_key=OPENAI_TOKEN)
+
+        resp = await openai_client.responses.create(
+            model="gpt-5",
+            instructions=warm_up_prompt,
+            input=chat_history,
+            tools=[{"type": "file_search", "vector_store_ids": ["vs_68c969d7932c8191a1278f52444d2d04"]}],
+        )
+
+        message = resp.output_text
+        await self.send_message(conversation_id, message)
+        await send_dev_telegram_log(f'[warm_up_newsletter]\nОтправлено прогревающее собщеение!\nID диалога CW: {conversation_id}\n\nСообщение:\n\n{message}','WARMUP')
