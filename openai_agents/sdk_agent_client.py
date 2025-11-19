@@ -148,7 +148,7 @@ class SdkAgentsService:
                 f"Запрос в SDKAgents. Агент: {self.name}.\n"
                 f"Для диалога {conv_id}\n"
                 f"ID последнего сообщения: {message_id}\n"
-                f"Дата последнего клиентского сообщения: {message_dt}"
+                f"Дата последнего клиентского сообщения: {message_dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")}"
             )
 
             history = await self._get_history(conv_id)
