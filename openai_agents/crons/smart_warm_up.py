@@ -149,13 +149,16 @@ async def process_conversation(session: AsyncSession, cw: ChatwootClient, conv_i
 
 async def smart_warm_up(session: AsyncSession) -> None:
     try:
-        active_inboxes = await TransportActivation.get_active_inboxes(session)
+        print('стартанули')
+        async with session.begin():
+            active_inboxes = await TransportActivation.get_active_inboxes(session)
         warmup_inboxes = set(active_inboxes) - ignored_inboxes
 
         stats = SmartWarmupStats()
 
         async with ChatwootClient() as cw:
             for inbox_id in warmup_inboxes:
+                print(f'обрабатываем инбокс {inbox_id}')
                 open_ids = await cw.get_open_conversation_ids(inbox_id=inbox_id)
                 agent_code = INBOX_TO_AGENT_CODE.get(inbox_id)
                 if not agent_code:
@@ -174,6 +177,7 @@ async def smart_warm_up(session: AsyncSession) -> None:
                 status_to_semantic = {s["STATUS_ID"]: s.get("EXTRA", {}).get("SEMANTICS") for s in deal_statuses_resp}
 
                 for conv_id in open_ids:
+                    print(f'обрабатываем диалог {conv_id}')
                     async with session.begin():
                         result = await process_conversation(session, cw, conv_id, portal, status_to_semantic)
 
