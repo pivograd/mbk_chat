@@ -13,6 +13,7 @@ TG_AGENTS_CHAT_ID = '-4985524072'
 TG_MANAGERS_CHAT_ID = '-4702575929'
 TG_STATUS_CHAT_ID = '-4936343919'
 TG_WARMUP_STATS_CHAT_ID = '-5032582706'
+TG_WARMUP_LOGS_CHAT_ID = '-5001996857'
 
 def get_chat_id(log_level):
     if log_level == "ERROR":
@@ -25,6 +26,8 @@ def get_chat_id(log_level):
         return TG_WARMUP_CHAT_ID
     elif log_level == "WARMUPINFO":
         return TG_WARMUP_STATS_CHAT_ID
+    elif log_level == "WARMUPLOGS":
+        return TG_WARMUP_LOGS_CHAT_ID
     elif log_level == "AGENTS":
         return TG_AGENTS_CHAT_ID
     elif log_level == "MANAGERS":

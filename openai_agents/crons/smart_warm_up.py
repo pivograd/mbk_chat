@@ -47,7 +47,7 @@ async def process_conversation(session: AsyncSession, cw: ChatwootClient, conv_i
         # 3 Если клиент отвечал менеджеру по продажам за последние два дня - пропускаем
         contact_phone = await cw.get_contact_phone_by_conversation(conv_id)
         if not contact_phone:
-            await send_dev_telegram_log(f'[smart_warm_up]\nНе удалось найти телефон контакта\nconv_id={conv_id}', 'ERROR')
+            await send_dev_telegram_log(f'[smart_warm_up]\nНе удалось найти телефон контакта\nconv_id={conv_id}', 'WARMUPLOGS')
             return ConversationResult(
                 conv_id=conv_id,
                 status='error',
@@ -75,10 +75,10 @@ async def process_conversation(session: AsyncSession, cw: ChatwootClient, conv_i
             next_warmup_date = conv.get_next_warmup_date()
         except Exception as e:
             await send_dev_telegram_log(f'[smart_warm_up]\nОшибка get_next_warmup_date\nconv_id={conv_id}\nERROR: {e}',
-                                        'ERROR')
+                                        'WARMUPLOGS')
             return ConversationResult(
                 conv_id=conv_id,
-                status='error',
+                status='skipped',
                 message=f'Ошибка get_next_warmup_date: {e}'
             )
 
@@ -139,7 +139,8 @@ async def process_conversation(session: AsyncSession, cw: ChatwootClient, conv_i
 
 
     except Exception as e:
-        await send_dev_telegram_log(f'[process_conversation]\nКритическая ошибка!\nconv_id={conv_id}\nERROR: {e}','ERROR')
+        tb = traceback.format_exc()
+        await send_dev_telegram_log(f'[process_conversation]\nКритическая ошибка!\nconv_id={conv_id}\n\nERROR: {tb}','WARMUPLOGS')
         return ConversationResult(
             conv_id=conv_id,
             status='error',
@@ -188,4 +189,4 @@ async def smart_warm_up(session: AsyncSession) -> None:
 
     except Exception as e:
         tb = traceback.format_exc()
-        await send_dev_telegram_log(f'[smart_warm_up]\nКритическая ошибка в кроне!\n\n{tb}')
+        await send_dev_telegram_log(f'[smart_warm_up]\nКритическая ошибка в кроне!\n\n{tb}', 'WARMUPLOGS')
