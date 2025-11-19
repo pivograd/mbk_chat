@@ -147,7 +147,7 @@ class SdkAgentsService:
                 f"[SdkAgentsService.process]\n"
                 f"Запрос в SDKAgents. Агент: {self.name}.\n"
                 f"Для диалога {conv_id}\n"
-                f"ID последнего сообщения: {message_id}"
+                f"ID последнего сообщения: {message_id}\n"
                 f"Дата последнего клиентского сообщения: {message_dt}"
             )
 
