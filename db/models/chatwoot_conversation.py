@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import UniqueConstraint, Integer, select, Boolean
+from sqlalchemy import UniqueConstraint, Integer, select, Boolean, DateTime
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -15,9 +16,12 @@ class ChatwootConversation(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     chatwoot_id: Mapped[int] = mapped_column(Integer, nullable=False)
     last_message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    last_client_message_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     agent_contact_sent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
-    # contact_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    # deal_id: Mapped[Optional[int]] = mapped_column(ForeignKey("bx_deal.id"), nullable=True)
+
+    next_meeting_datetime: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    warmup_number: Mapped[int] = mapped_column(Integer, nullable=True)
+    last_warmup_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     @staticmethod
     async def get_or_create(session: AsyncSession, chatwoot_id: int) -> "ChatwootConversation":

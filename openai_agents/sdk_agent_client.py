@@ -130,16 +130,25 @@ class SdkAgentsService:
             if not message_id:
                 return {"error": "empty message_id"}
 
+            created_at_str = payload.get("created_at")
+            if not created_at_str or not isinstance(created_at_str, str):
+                return {"error": "empty created_at_str"}
+            if created_at_str.endswith("Z"):
+                created_at_str = created_at_str.replace("Z", "+00:00")
+            message_dt = datetime.fromisoformat(created_at_str)
+
             async with session() as db:
                 async with db.begin():
                     conv = await ChatwootConversation.get_or_create(db, chatwoot_id=conv_id)
                     conv.last_message_id = int(message_id)
+                    conv.last_message_created_at = message_dt
 
             await send_dev_telegram_log(
                 f"[SdkAgentsService.process]\n"
                 f"Запрос в SDKAgents. Агент: {self.name}.\n"
                 f"Для диалога {conv_id}\n"
                 f"ID последнего сообщения: {message_id}"
+                f"Дата последнего клиентского сообщения: {message_dt}"
             )
 
             history = await self._get_history(conv_id)
