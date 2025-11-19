@@ -110,7 +110,6 @@ class SdkAgentsService:
 
     async def process(self, payload: Dict[str, Any], session):
         try:
-            await send_dev_telegram_log(f'[DEV SDK]\n payload: {payload}', 'DEV')
             if payload.get("event") != "message_created":
                 return {"status": "skipped_event"}
 

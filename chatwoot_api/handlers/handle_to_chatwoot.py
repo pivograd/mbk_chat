@@ -8,7 +8,6 @@ async def handle_to_chatwoot(request, agent_code, kind, inbox_id):
     """
     Транспартирует входящее сообщение в Chatwoot
     """
-
     if kind == "wa":
         return await inbound_green_api(request, agent_code, inbox_id)
     elif kind == "tg":
