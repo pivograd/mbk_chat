@@ -127,7 +127,7 @@ async def analyze_conversation(conv_id):
         else:
             chat_history.append({"role": role, "content": f"(отправлено {dt_str}) {content}"})
 
-    openai_client = AsyncOpenAI(api_key=OPENAI_TOKEN, base_url='http://150.241.122.84:3333/v1/') # в проде прокси не нужен
+    openai_client = AsyncOpenAI(api_key=OPENAI_TOKEN) # в проде прокси не нужен
 
     resp = await openai_client.responses.parse(
         model="gpt-5-mini",
