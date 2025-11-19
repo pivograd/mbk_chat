@@ -59,7 +59,11 @@ class ChatwootConversation(Base):
         - если было 5 и больше  -> +14 дней
         """
         if self.last_client_message_date is None:
-            raise Exception(f'Попытка посчитать дату рассылки для диалога без клиентских сообщений! conv_id: {self.chatwoot_id}')
+            if not self.last_message_id:
+                raise Exception(f'Попытка посчитать дату рассылки для диалога без клиентских сообщений! conv_id: {self.chatwoot_id}')
+            else:
+                return None
+
 
         warmup_num = self.warmup_number or 0
 
