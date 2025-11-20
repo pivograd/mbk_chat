@@ -37,6 +37,8 @@ async def handle_form_website_webhook(request):
         form_data = data.get("form_data")
         if form_data:
             message = await get_message_from_ai(data)
+            if form_data.get('form_quiz_construction_region') == "Московская область":
+                agent_name = 'pavel'
             await send_dev_telegram_log(f'[handle_form_website_webhook]\nmessage: {message}','DEV')
 
         name = None
