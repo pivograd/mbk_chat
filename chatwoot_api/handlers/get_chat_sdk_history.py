@@ -27,11 +27,7 @@ async def get_chat_sdk_history(request: web.Request) -> web.Response:
                 status=400,
             )
 
-        async with ChatwootClient() as cw:
-            inbox_id = cw.get_inbox_id_by_conversation(conversation_id)
-            agent_code = INBOX_TO_AGENT_CODE.get(inbox_id)
-
-        await send_dev_telegram_log(f'[get_chat_sdk_history]\n{agent_code}, {inbox_id}', 'DEV')
+        agent_code = 'pavel'
 
         service = get_sdk_agents_service(agent_code)
         history = await service._get_history(conversation_id)
