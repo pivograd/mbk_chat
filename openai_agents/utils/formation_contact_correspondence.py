@@ -19,7 +19,7 @@ def formation_contact_correspondence(chats: list[dict]) -> str:
 
             formatted_time = dt_msk.strftime("%d.%m.%Y %H:%M")
 
-            text = msg["text"].strip()
+            text = (msg.get("text") or "").strip()
             if msg["type"] == "document":
                 text = f"(документ) {text}"
 
