@@ -2,6 +2,7 @@ import pathlib
 from dotenv import load_dotenv
 
 from bx24.handlers.handle_deal_update import handle_deal_update
+from chatwoot_api.handlers.get_chat_sdk_history import get_chat_sdk_history
 from chatwoot_api.handlers.handle_from_chatwoot import handle_from_chatwoot
 from chatwoot_api.handlers.handle_to_chatwoot import handle_to_chatwoot
 from company_websites.handlers.hande_site_comeback import handle_site_comeback
@@ -50,6 +51,9 @@ app.router.add_post("/bx24/mbkchat/select_dialog", handle_bx24_customfield_selec
 
 # OpenAI
 app.router.add_post("/sdk_agent_webhook/{agent_code}", handle_sdk_agent_webhook)
+
+# Chatwoot
+app.router.add_get("/sdk/conversations/{conversation_id}/history", get_chat_sdk_history)
 
 # Chatwoot handlers
 for agent_cfg in BOTS_CFG:
