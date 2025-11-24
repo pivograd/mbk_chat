@@ -1,3 +1,5 @@
+import traceback
+
 from aiohttp import web
 
 from chatwoot_api.chatwoot_client import ChatwootClient
@@ -41,7 +43,6 @@ async def get_chat_sdk_history(request: web.Request) -> web.Response:
         )
 
     except KeyError as e:
-        # Если DEFAULT_AGENT_CODE неправильный или не найден в AGENTS_BY_CODE
         await send_dev_telegram_log(
             f"[get_chat_sdk_history]\nНекорректный agent_code\nERROR: {e}",
             "ERROR",
@@ -51,8 +52,9 @@ async def get_chat_sdk_history(request: web.Request) -> web.Response:
             status=500,
         )
     except Exception as e:
+        tb = traceback.format_exc()
         await send_dev_telegram_log(
-            f"[get_chat_sdk_history]\nКритическая ошибка\nERROR: {e}",
+            f"[get_chat_sdk_history]\nКритическая ошибка\nERROR: {tb}",
             "ERROR",
         )
         return web.json_response(
