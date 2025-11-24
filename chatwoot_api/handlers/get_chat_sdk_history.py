@@ -31,6 +31,7 @@ async def get_chat_sdk_history(request: web.Request) -> web.Response:
             inbox_id = cw.get_inbox_id_by_conversation(conversation_id)
             agent_code = INBOX_TO_AGENT_CODE.get(inbox_id)
 
+        await send_dev_telegram_log(f'[get_chat_sdk_history]\n{agent_code}, {inbox_id}', 'DEV')
 
         service = get_sdk_agents_service(agent_code)
         history = await service._get_history(conversation_id)
@@ -46,7 +47,7 @@ async def get_chat_sdk_history(request: web.Request) -> web.Response:
     except KeyError as e:
         # Если DEFAULT_AGENT_CODE неправильный или не найден в AGENTS_BY_CODE
         await send_dev_telegram_log(
-            f"[handle_conversation_history]\nНекорректный agent_code\nERROR: {e}",
+            f"[get_chat_sdk_history]\nНекорректный agent_code\nERROR: {e}",
             "ERROR",
         )
         return web.json_response(
@@ -55,7 +56,7 @@ async def get_chat_sdk_history(request: web.Request) -> web.Response:
         )
     except Exception as e:
         await send_dev_telegram_log(
-            f"[handle_conversation_history]\nКритическая ошибка\nERROR: {e}",
+            f"[get_chat_sdk_history]\nКритическая ошибка\nERROR: {e}",
             "ERROR",
         )
         return web.json_response(
