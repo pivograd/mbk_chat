@@ -183,8 +183,11 @@ class ChatwootClient:
         )
         conversation_id = resp.get('id')
         open_response = await self.open_conversation(conversation_id)
+        add_parse_link = await self.set_parse_history_wh_link(conversation_id)
         if not open_response:
-            await send_dev_telegram_log(f'[create_conversation]\nНе удалось открыть диалог ID: {conversation_id}')
+            await send_dev_telegram_log(f'[create_conversation]\nНе удалось открыть диалог ID: {conversation_id}', 'WARNING')
+        if not add_parse_link:
+            await send_dev_telegram_log(f'[create_conversation]\nНе удалось встроить вебхук для парсинга: {conversation_id}', 'WARNING')
         return conversation_id
 
 
@@ -555,6 +558,16 @@ class ChatwootClient:
         resp = await self.update_conversation_custom_attributes(
             conversation_id,
             {"bx24_deal_id": deal_url},
+        )
+        return isinstance(resp, dict) and "custom_attributes" in resp
+
+    async def set_parse_history_wh_link(self, conversation_id) -> bool:
+        """
+        Сохраняет ссылку на сделку Б24 в кастомный атрибут 'bx24_deal_id'.
+        """
+        resp = await self.update_conversation_custom_attributes(
+            conversation_id,
+            {"history_sdk_agents": f"https://api.mbk-chat.ru/sdk/conversations/{conversation_id}/history"},
         )
         return isinstance(resp, dict) and "custom_attributes" in resp
 

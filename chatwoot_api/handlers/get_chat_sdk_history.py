@@ -2,9 +2,7 @@ import traceback
 
 from aiohttp import web
 
-from chatwoot_api.chatwoot_client import ChatwootClient
 from openai_agents.sdk_agent_client import get_sdk_agents_service
-from settings import INBOX_TO_AGENT_CODE
 from telegram.send_log import send_dev_telegram_log
 
 
