@@ -13,6 +13,7 @@ async def ai_send_agent_contact_card(ctx: RunContextWrapper[dict]) -> str:
     Отправляет контакт агента клиенту.
     """
     conversation_id = ctx.context.conversation_id
+    await send_dev_telegram_log(f'[ai_send_agent_contact_card]\nАГЕНТ вызывал инструмент для отправки контакта менеджера!', 'DEV')
     if not conversation_id:
         await send_dev_telegram_log(f'[ai_send_agent_contact_card]\nВ контексте нет ID диалога.\nctx: {ctx.context}','ERROR')
         return web.json_response({"status": "error"})
