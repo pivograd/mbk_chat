@@ -18,6 +18,7 @@ class ChatwootConversation(Base):
     last_message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     last_client_message_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     agent_contact_sent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    manager_contact_sent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
 
     next_meeting_datetime: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     warmup_number: Mapped[int] = mapped_column(Integer, nullable=True)
