@@ -24,7 +24,6 @@ async def ai_send_manager_contact_card(ctx: RunContextWrapper[dict]) -> str:
         await send_dev_telegram_log(f'[ai_send_manager_contact_card]\nЗапрос на отправку контакта менеджера Агентом\nconversation_id: {conversation_id}', 'DEV')
         async with ctx.context.db_session() as session:
             async with session.begin():
-                await send_dev_telegram_log(f'[ai_send_manager_contact_card]\n1\nconversation_id: {conversation_id}','DEV')
                 conversation = await ChatwootConversation.get_or_create(session=session, chatwoot_id=conversation_id)
 
                 stmt = (
@@ -36,7 +35,6 @@ async def ai_send_manager_contact_card(ctx: RunContextWrapper[dict]) -> str:
                     .values(manager_contact_sent=True)
                     .returning(ChatwootConversation.id)
                 )
-                await send_dev_telegram_log(f'[ai_send_manager_contact_card]\n2\nconversation_id: {conversation_id}','DEV')
                 result = await session.execute(stmt)
                 row = result.first()
                 should_send_contact = row is not None
@@ -50,8 +48,6 @@ async def ai_send_manager_contact_card(ctx: RunContextWrapper[dict]) -> str:
                 await send_dev_telegram_log(f'[ai_send_manager_contact_card]\n3\nconversation_id: {conversation_id}',
                                             'DEV')
                 for deal in deals:
-                    await send_dev_telegram_log(
-                        f'[ai_send_manager_contact_card]\n3\nconversation_id: {conversation_id}', 'DEV')
                     try:
                         deal_id = deal.bx_deal_id
                         if not deal_id:
@@ -63,6 +59,7 @@ async def ai_send_manager_contact_card(ctx: RunContextWrapper[dict]) -> str:
                         user_resp = fv_but.call_api_method('user.get', {'ID': assigned_id}).get('result', [{}])[0]
                         work_phone = user_resp.get('WORK_PHONE')
                         if not work_phone:
+                            await send_dev_telegram_log(f'[ai_send_manager_contact_card]\nУ менеджера не заполнен рабочий телефонn\ndeal ID: {deal_id}\nuser_resp: {user_resp}','DEV')
                             resp = {"success": False, "message": "У ответственного не заполнен рабочий номер телефона!"}
                             return web.json_response(resp, status=200)
 
@@ -76,8 +73,6 @@ async def ai_send_manager_contact_card(ctx: RunContextWrapper[dict]) -> str:
                         break
                     except Exception:
                         continue
-
-        await send_dev_telegram_log(f'[ai_send_manager_contact_card]\n4\nconversation_id: {conversation_id}', 'DEV')
         return web.json_response({"status": "ok"})
     except Exception as e:
         await send_dev_telegram_log(f'[ai_send_manager_contact_card]\nОшибка в tool для отправки контакта!\nconversation_id: {conversation_id}\nERROR: {e}', 'ERROR')
