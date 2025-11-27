@@ -21,7 +21,7 @@ async def ai_send_manager_contact_card(ctx: RunContextWrapper[dict]) -> str:
         return web.json_response({"status": "error"})
     try:
         conversation_id = int(conversation_id)
-
+        await send_dev_telegram_log(f'[ai_send_manager_contact_card]\nЗапрос на отправку контакта менеджера Агентом\nconversation_id: {conversation_id}', 'DEV')
         async with ctx.context.db_session() as session:
             async with session.begin():
 
