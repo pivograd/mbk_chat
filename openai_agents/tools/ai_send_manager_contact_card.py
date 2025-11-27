@@ -41,9 +41,9 @@ async def ai_send_manager_contact_card(ctx: RunContextWrapper[dict]) -> str:
                 row = result.first()
                 should_send_contact = row is not None
 
-                if not should_send_contact:
-                    await send_dev_telegram_log(f'[ai_send_manager_contact_card]\nКонтакт был отправлен ранее!\nconversation_id: {conversation_id}', 'INFO')
-                    return web.json_response({"status": "ok"})
+                # if not should_send_contact:
+                #     await send_dev_telegram_log(f'[ai_send_manager_contact_card]\nКонтакт был отправлен ранее!\nconversation_id: {conversation_id}', 'INFO')
+                #     return web.json_response({"status": "ok"})
                 deals = await BxDealCwLink.get_deals_for_conversation(session=session, conversation_id=conversation_id, portal=FORESTVOLOGDA_DOMAIN)
                 for deal in deals:
                     try:
