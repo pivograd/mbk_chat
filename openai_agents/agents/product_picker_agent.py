@@ -4,6 +4,7 @@ from openai.types import Reasoning
 
 from classes.config import OpenAIConfig
 from openai_agents.tools.ai_send_agent_contact_card import ai_send_agent_contact_card
+from openai_agents.tools.ai_send_manager_contact_card import ai_send_manager_contact_card
 from openai_agents.utils.insert_main_info_in_prompt import insert_main_info_in_prompt
 from settings import MODEL_MAIN, PRODUCT_PICKER_PROMPT_PATH
 from utils.insert_txt_in_block import insert_txt_in_block
@@ -38,6 +39,7 @@ def build_product_picker_agent(cfg: OpenAIConfig,  model: str = MODEL_MAIN) -> A
             "Работает с продуктовым файлом, формирует для клиента подборку проектов."
         ),
         tools=[
+            ai_send_manager_contact_card,
             ai_send_agent_contact_card,
             mcp
         ],

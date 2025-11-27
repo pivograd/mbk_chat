@@ -4,6 +4,7 @@ from openai.types import Reasoning
 
 from classes.config import OpenAIConfig
 from openai_agents.tools.ai_send_agent_contact_card import ai_send_agent_contact_card
+from openai_agents.tools.ai_send_manager_contact_card import ai_send_manager_contact_card
 from openai_agents.utils.insert_main_info_in_prompt import insert_main_info_in_prompt
 from settings import MODEL_MAIN, PRODUCT_HELPER_PROMPT_PATH
 from utils.read_txt_file import read_txt_file
@@ -37,6 +38,7 @@ def build_product_helper_agent(cfg: OpenAIConfig,  model: str = MODEL_MAIN) -> A
             "Работает с продуктовым файлом, отвечает клиенту про конкретный проект"
         ),
         tools=[
+            ai_send_manager_contact_card,
             ai_send_agent_contact_card,
             mcp
         ],
