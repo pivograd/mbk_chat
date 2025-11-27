@@ -48,6 +48,9 @@ async def ai_send_manager_contact_card(ctx: RunContextWrapper[dict]) -> str:
                 for deal in deals:
                     deal_id = deal.bx_deal_id
                     break
+                if not deal_id:
+                    await send_dev_telegram_log(f'[ai_send_manager_contact_card]\nНет deal_id!\ndeals: {deals}', 'DEV')
+                    return web.json_response({"status": "error"})
 
                 deal_resp = fv_but.call_api_method('crm.deal.get', {'id': deal_id}).get('result')
                 assigned_id = deal_resp.get('ASSIGNED_BY_ID')
