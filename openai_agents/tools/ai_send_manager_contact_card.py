@@ -65,6 +65,7 @@ async def ai_send_manager_contact_card(ctx: RunContextWrapper[dict]) -> str:
 
                 contact_info = build_contact_info(name, last_name, work_phone)
                 async with ChatwootClient() as cw:
+                    await send_dev_telegram_log(f'[ai_send_manager_contact_card]\nОтправка контакта менеджера!\nconversation_id: {conversation_id}\deal ID: {deal_id}\n contact_info: {contact_info}', 'DEV')
                     await cw.send_message(conversation_id=conversation_id, content=contact_info)
 
         return web.json_response({"status": "ok"})
