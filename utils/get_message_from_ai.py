@@ -1,7 +1,9 @@
-from aiohttp import payload
+from datetime import datetime
 
+from chatwoot_api.chatwoot_client import ChatwootClient
 from settings import OPENAI_TOKEN
 from telegram.send_log import send_dev_telegram_log
+from utils.normalize_phone import normalize_phone
 
 prompt = """
 Ты — менеджер в компании «Вологодское Зодчество». Ты пишешь первое сообщение клиенту в WhatsApp после отправки любой формы на сайте.
@@ -19,14 +21,23 @@ prompt = """
 консультацию и т.п.
 Сформулировать короткое и понятное описание запроса в одну фразу в форме: «получить подборку одноэтажных домов 240–380 м² с 3 спальнями», «получить расчёт по дому VZ-789 „Порту“», «получить смету для ипотеки по дому …», «получить презентацию проекта …», «заказать индивидуальный проект дома», «записаться на экскурсию на строительство» и т.д.
 Если данных мало или структура title непонятна — делай описание более общим: «получить консультацию по строительству дома», «получить расчёт по будущему дому», «обсудить проект дома» и т.п.
+Проанализировать контекст предыдущих сообщений с этим клиентом. Если предыдущие сообщения повторяют один и тот же запрос, не дублируй его дословно, а придумывай новый вопрос, который:
+должен быть уникальным,
+связан с новым запросом клиента,
+опирается на информацию из предыдущих сообщений,
+уточняет или расширяет запрос клиента.
 
 ФОРМАТ ОТВЕТА (СТРОГО)
 Ты всегда отвечаешь одним коротким сообщением по шаблону:
 Правильно понимаю, что хотели бы {короткое описание того, что человек запросил}?
-Где {короткое описание того, что человек запросил} — это твоя сжатая формулировка смысла заявки на основе title и comment.
+Где {короткое описание того, что человек запросил} — это твоя сжатая формулировка смысла заявки на основе title и comment и анализа предыдущих сообщений.
+
 
 ЖЁСТКИЕ ОГРАНИЧЕНИЯ
 Не добавляй никаких других вопросов, кроме фразы «Правильно понимаю, что хотели бы …?».
+В случае повторной отправки любой формы на сайте от клиента не начинай вопрос с «Правильно понимаю, что хотели бы …?». 
+Переформулируй и сделай его уникальным, сославшись на предыдущее сообщение.  Например, "Видел, что вы оставили еще заявку", "Замечаю, что пришла новая заявка — правильно ли я понимаю, что хотите подборку одноэтажных домов с 3 спальнями?", "Получил вашу новую заявку — хотели бы записаться на экскурсию по строительству?", "Замечаю ещё один ваш запрос — уточните, интересует ли консультация по будущему дому?" и так далее.
+
 Не дописывай благодарности, смайлики, лишние фразы («спасибо за обращение», «готов вам помочь» и т.п.).
 Не используй маркдауны, кавычки вокруг всего сообщения, JSON, пояснения к ответу.
 На выходе ты возвращаешь только текст сообщения для клиента, полностью готовый к отправке в WhatsApp, строго по указанному шаблону.
@@ -75,41 +86,52 @@ def _build_user_payload(lead) -> Dict[str, Any]:
         "form_data": form_data,
     }
 
-async def get_message_from_ai(lead_data: Dict[str, Any]) -> str:
+async def get_message_from_ai(lead_data: Dict[str, Any], inbox_id: int) -> str:
     """
     Возвращает одно уточняющее сообщение для клиента по заявке.
     """
     user_payload = _build_user_payload(lead_data)
 
-    response_format = {
-        "type": "json_schema",
-        "json_schema": {
-            "name": "lead_message",
-            "strict": True,
-            "schema": {
-                "type": "object",
-                "additionalProperties": False,
-                "properties": {
-                    "message": {
-                        "type": "string",
-                        "description": "Короткое вежливое уточняющее сообщение на русском языке."
-                    }
-                },
-                "required": ["message"]
-            }
-        }
-    }
+    identifier = normalize_phone(lead_data.get("phone", '')).lstrip('+')
 
-    messages = [
-        {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-    ]
+    async with ChatwootClient() as cw:
+        contact_id = await cw.get_contact_id(identifier)
+        if contact_id:
+            conversation_id = await cw.get_conversation_id(contact_id, inbox_id)
+            messages = await cw.get_all_messages(conversation_id)
+
+    history = [{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},]
+
+    for msg in messages:
+        role = "user" if msg.get("message_type") == 0 else "assistant"
+        content = (msg.get("content") or "").strip()
+        if not content:
+            continue
+        created_at = msg.get("created_at")
+        if created_at:
+            dt_str = datetime.fromtimestamp(created_at).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            dt_str = "unknown"
+
+        if msg.get("private"):
+            history.append({
+                "role": "assistant",
+                "content": f"[Внутренняя заметка, не транслируй клиенту дословно!] "
+                           f"(отправлено {dt_str}): {content}"})
+        elif msg.get("message_type") == 2:
+            history.append({
+                "role": "assistant",
+                "content": f"[СИСТЕМНАЯ ИНФОРМАЦИЯ!]"
+                           f"{content}"})
+        else:
+            history.append({"role": role, "content": f"(отправлено {dt_str}) {content}"})
 
     try:
         openai_client = AsyncOpenAI(api_key=OPENAI_TOKEN)
         resp = await openai_client.responses.parse(
             model="gpt-5",
             instructions=prompt,
-            input=messages,
+            input=history,
         )
         return resp.output_text
 

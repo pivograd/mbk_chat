@@ -34,14 +34,11 @@ async def handle_form_website_webhook(request):
         match = re.search(r'Форма\s*:\s*([^\n\r]+)', comment)
         form_type = match.group(1).strip() if match else 'quiz'
         message = get_message_from_comment(comment, form_type, domain)
-
         form_data = data.get("form_data")
         if form_data:
-            message = await get_message_from_ai(data)
             form_data_json = json.loads(form_data)
             if form_data_json.get('form_quiz_construction_region') == "Московская область":
                 agent_name = 'pavel'
-            await send_dev_telegram_log(f'[handle_form_website_webhook]\nmessage: {message}','DEV')
 
         name = None
         if name_match:
@@ -67,6 +64,12 @@ async def handle_form_website_webhook(request):
             async with transport_cfg.get_wappi_client() as wappi_client:
                 # Сохраняем номер телефона в контакты ТГ
                 await wappi_client.get_or_create_contact(phone, name)
+
+        if form_data:
+            inbox_id = transport_cfg.chatwoot.inbox.inbox_id
+
+            message = await get_message_from_ai(data, inbox_id)
+            await send_dev_telegram_log(f'[handle_form_website_webhook]\nmessage: {message}', 'DEV')
 
         await safe_send_to_chatwoot(phone, name, message, transport_cfg.chatwoot, comment=comment)
         return web.Response(text="Отправили сообщение", status=200)
