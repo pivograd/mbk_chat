@@ -102,29 +102,31 @@ async def get_message_from_ai(lead_data: Dict[str, Any], inbox_id: int) -> str:
 
     history = []
 
-    for msg in messages:
-        role = "user" if msg.get("message_type") == 0 else "assistant"
-        content = (msg.get("content") or "").strip()
-        if not content:
-            continue
-        created_at = msg.get("created_at")
-        if created_at:
-            dt_str = datetime.fromtimestamp(created_at).strftime("%Y-%m-%d %H:%M:%S")
-        else:
-            dt_str = "unknown"
 
-        if msg.get("private"):
-            history.append({
-                "role": "assistant",
-                "content": f"[Внутренняя заметка, не транслируй клиенту дословно!] "
-                           f"(отправлено {dt_str}): {content}"})
-        elif msg.get("message_type") == 2:
-            history.append({
-                "role": "assistant",
-                "content": f"[СИСТЕМНАЯ ИНФОРМАЦИЯ!]"
-                           f"{content}"})
-        else:
-            history.append({"role": role, "content": f"(отправлено {dt_str}) {content}"})
+    if messages:
+        for msg in messages:
+            role = "user" if msg.get("message_type") == 0 else "assistant"
+            content = (msg.get("content") or "").strip()
+            if not content:
+                continue
+            created_at = msg.get("created_at")
+            if created_at:
+                dt_str = datetime.fromtimestamp(created_at).strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                dt_str = "unknown"
+
+            if msg.get("private"):
+                history.append({
+                    "role": "assistant",
+                    "content": f"[Внутренняя заметка, не транслируй клиенту дословно!] "
+                               f"(отправлено {dt_str}): {content}"})
+            elif msg.get("message_type") == 2:
+                history.append({
+                    "role": "assistant",
+                    "content": f"[СИСТЕМНАЯ ИНФОРМАЦИЯ!]"
+                               f"{content}"})
+            else:
+                history.append({"role": role, "content": f"(отправлено {dt_str}) {content}"})
 
     history.append({"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)})
     try:
