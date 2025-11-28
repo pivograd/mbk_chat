@@ -100,7 +100,7 @@ async def get_message_from_ai(lead_data: Dict[str, Any], inbox_id: int) -> str:
             conversation_id = await cw.get_conversation_id(contact_id, inbox_id)
             messages = await cw.get_all_messages(conversation_id)
 
-    history = [{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},]
+    history = []
 
     for msg in messages:
         role = "user" if msg.get("message_type") == 0 else "assistant"
@@ -126,6 +126,7 @@ async def get_message_from_ai(lead_data: Dict[str, Any], inbox_id: int) -> str:
         else:
             history.append({"role": role, "content": f"(отправлено {dt_str}) {content}"})
 
+    history.append({"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)})
     try:
         openai_client = AsyncOpenAI(api_key=OPENAI_TOKEN)
         resp = await openai_client.responses.parse(
