@@ -93,7 +93,7 @@ async def get_message_from_ai(lead_data: Dict[str, Any], inbox_id: int) -> str:
     user_payload = _build_user_payload(lead_data)
 
     identifier = normalize_phone(lead_data.get("phone", '')).lstrip('+')
-
+    messages = None
     async with ChatwootClient() as cw:
         contact_id = await cw.get_contact_id(identifier)
         if contact_id:
