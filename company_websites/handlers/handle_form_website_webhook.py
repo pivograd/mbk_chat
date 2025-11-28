@@ -66,7 +66,7 @@ async def handle_form_website_webhook(request):
                 await wappi_client.get_or_create_contact(phone, name)
 
         if form_data:
-            inbox_id = transport_cfg.chatwoot.inbox.inbox_id
+            inbox_id = transport_cfg.chatwoot.inbox_id
 
             message = await get_message_from_ai(data, inbox_id)
             await send_dev_telegram_log(f'[handle_form_website_webhook]\nmessage: {message}', 'DEV')
